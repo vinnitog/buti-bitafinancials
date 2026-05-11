@@ -13,6 +13,7 @@ PWA de controle financeiro pessoal com sincronização em tempo real.
 - Histórico mensal com extrato completo
 - Sincronização em tempo real entre dispositivos via banco de dados na nuvem
 - Login individual com perfil automático por usuário
+- Notificações locais para contas próximas do vencimento
 
 ---
 
@@ -23,7 +24,7 @@ PWA de controle financeiro pessoal com sincronização em tempo real.
 | Frontend | HTML5 + CSS3 + JavaScript vanilla |
 | Banco de dados | Supabase (PostgreSQL) |
 | Fonte | Geist (Google Fonts) |
-| PWA | Service Worker |
+| PWA | Service Worker (`sw.js`) |
 | Testes unitários | Node.js `node:test` |
 | Testes E2E | Playwright + Python |
 
@@ -33,7 +34,8 @@ PWA de controle financeiro pessoal com sincronização em tempo real.
 
 ```
 .
-├── index.html       # App completo
+├── index.html                    # App completo
+├── sw.js                         # Service Worker (obrigatório para PWA)
 ├── README.md
 ├── package.json
 ├── unit/
@@ -48,9 +50,25 @@ PWA de controle financeiro pessoal com sincronização em tempo real.
 
 ## Instalação no celular
 
+O banner de instalação só aparece quando o app é acessado via **HTTPS** — não funciona em `file://` local. Use o link do GitHub Pages.
+
 **Android:** Chrome → menu ⋮ → "Adicionar à tela inicial"
 
 **iPhone:** Safari → compartilhar □↑ → "Adicionar à Tela de Início"
+
+O app aparece na tela inicial como **Buti&Bita**.
+
+---
+
+## Notificações
+
+As notificações alertam sobre contas que vencem no dia ou em até 3 dias. Para ativar:
+
+1. Acesse o app via HTTPS (GitHub Pages)
+2. Vá em **Configuração → Notificações → ativar o toggle**
+3. Aceite a permissão quando o browser perguntar
+
+> Notificações só funcionam com o app aberto. Para receber alertas com o app fechado seria necessário um servidor de push — não implementado.
 
 ---
 

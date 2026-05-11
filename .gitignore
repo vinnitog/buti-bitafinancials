@@ -1,0 +1,26 @@
+# ===== SEGURANÇA — nunca versionar =====
+SECURITY.md
+
+# ===== DEPENDÊNCIAS =====
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+env/
+venv/
+
+# ===== SISTEMA =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== EDITORES =====
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ===== TESTES — arquivos temporários =====
+/tmp/
+*.log

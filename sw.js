@@ -1,49 +1,76 @@
 /**
  * Buti & Bita Financials — Service Worker
- * Handles: offline cache, push notifications
+ * Estratégia: network-first para o HTML (sempre atualizado),
+ * cache-first para assets estáticos (fontes, ícones).
+ * Resultado: push no GitHub → usuário vê a mudança no próximo reload,
+ * sem precisar reinstalar o PWA ou atualizar versão manualmente.
  */
 
 const CACHE_NAME = 'buti-bita-v1';
-const ASSETS = ['./'];  // cache the app shell
 
-// Install — cache app shell
+// Install — não pré-cacheia nada (evita travar em versão antiga)
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
-  );
-  self.skipWaiting();
+  self.skipWaiting(); // ativa imediatamente sem esperar aba fechar
 });
 
-// Activate — clean up old caches
+// Activate — limpa caches antigos
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     )
   );
-  self.clients.claim();
+  self.clients.claim(); // assume controle de todas as abas abertas
 });
 
-// Fetch — network first, fallback to cache
+// Fetch — estratégia por tipo de recurso
 self.addEventListener('fetch', event => {
-  // Don't intercept Supabase API calls — always need fresh data
-  if (event.request.url.includes('supabase.co')) return;
+  const url = new URL(event.request.url);
 
-  event.respondWith(
-    fetch(event.request)
-      .then(res => {
-        // Cache successful GET responses
-        if (res.ok && event.request.method === 'GET') {
+  // Supabase: nunca interceptar — sempre rede
+  if (url.hostname.includes('supabase.co')) return;
+
+  // Google Fonts: cache-first (não mudam)
+  if (url.hostname.includes('fonts.googleapis.com') ||
+      url.hostname.includes('fonts.gstatic.com')) {
+    event.respondWith(
+      caches.match(event.request).then(cached =>
+        cached || fetch(event.request).then(res => {
           const clone = res.clone();
           caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
-        }
-        return res;
-      })
-      .catch(() => caches.match(event.request))
+          return res;
+        })
+      )
+    );
+    return;
+  }
+
+  // HTML (index.html / raiz): network-first — garante versão mais recente
+  // Se offline, cai no cache como fallback
+  if (event.request.mode === 'navigate' ||
+      url.pathname.endsWith('.html') ||
+      url.pathname === '/' ||
+      url.pathname.endsWith('/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(res => {
+          // Atualiza cache com versão nova
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(event.request)) // offline fallback
+    );
+    return;
+  }
+
+  // Demais assets (sw.js, ícones): network-first também
+  event.respondWith(
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
 
-// Push — show notification when triggered by server (future use)
+// Push — notificação recebida do servidor (uso futuro)
 self.addEventListener('push', event => {
   const data = event.data?.json() ?? {
     title: 'Buti&Bita Financials',
@@ -61,7 +88,7 @@ self.addEventListener('push', event => {
   );
 });
 
-// Notification click — open or focus the app
+// Clique na notificação — abre ou foca o app
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   event.waitUntil(

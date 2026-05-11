@@ -455,6 +455,22 @@ body {
 }
 .btn-login.loading .btn-spinner { display:block; }
 
+/* OLHO — senha e salários */
+.input-eye-wrap { position:relative; }
+.input-eye-wrap .form-input { padding-right:42px; }
+.eye-btn {
+  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  background:none; border:none; cursor:pointer; padding:4px;
+  font-size:16px; line-height:1; color:var(--text2); transition:color 0.15s;
+}
+.eye-btn:hover { color:var(--text); }
+.salary-eye-btn {
+  background:none; border:none; cursor:pointer;
+  font-size:13px; color:var(--text2); padding:0 2px;
+  transition:color 0.15s; line-height:1;
+}
+.salary-eye-btn:hover { color:var(--text); }
+
 /* USER CHIP no header */
 .user-chip {
   display:flex; align-items:center; gap:6px;
@@ -500,7 +516,12 @@ body {
     </div>
     <div class="form-group">
       <label class="form-label">Senha</label>
-      <input class="form-input" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+      <div class="input-eye-wrap">
+        <input class="form-input" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+        <button type="button" class="eye-btn" id="eye-login" onclick="toggleSenhaLogin()" tabindex="-1" title="Mostrar senha">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
     </div>
     <button class="btn-login" id="btn-login" onclick="fazerLogin()">
       Entrar
@@ -565,19 +586,34 @@ body {
   <!-- Salary cards -->
   <div class="salary-grid">
     <div class="salary-card salary-buti">
-      <div class="salary-title">💼 <span style="color:#a8bc48">Buti</span></div>
-      <div class="salary-amount" id="salary-buti-base">—</div>
-      <div class="salary-bonus">bônus <span id="salary-buti-bonus" style="color:#a8bc48">—</span></div>
+      <div class="salary-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>💼 <span style="color:#a8bc48">Buti</span></span>
+        <button class="salary-eye-btn" id="eye-buti" onclick="toggleSalario('buti')" title="Mostrar/ocultar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div class="salary-amount" id="salary-buti-base">••••</div>
+      <div class="salary-bonus">bônus <span id="salary-buti-bonus" style="color:#a8bc48">••••</span></div>
     </div>
     <div class="salary-card salary-bita">
-      <div class="salary-title">💼 <span style="color:#c084fc">Bita</span></div>
-      <div class="salary-amount" id="salary-bita-base">—</div>
-      <div class="salary-bonus">bônus <span id="salary-bita-bonus" style="color:#c084fc">—</span></div>
+      <div class="salary-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>💼 <span style="color:#c084fc">Bita</span></span>
+        <button class="salary-eye-btn" id="eye-bita" onclick="toggleSalario('bita')" title="Mostrar/ocultar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div class="salary-amount" id="salary-bita-base">••••</div>
+      <div class="salary-bonus">bônus <span id="salary-bita-bonus" style="color:#c084fc">••••</span></div>
     </div>
   </div>
   <div class="salary-total-bar">
-    <span class="salary-total-label">Renda total do casal</span>
-    <span class="salary-total-val" id="salary-total">—</span>
+    <span class="salary-total-label" style="display:flex;align-items:center;gap:6px">
+      Renda total do casal
+      <button class="salary-eye-btn" id="eye-total" onclick="toggleSalario('total')" title="Mostrar/ocultar" style="vertical-align:middle">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </span>
+    <span class="salary-total-val" id="salary-total">••••</span>
   </div>
   <div class="summary-grid">
     <div class="sum-card"><div class="sum-label">Total contas</div><div class="sum-value red" id="total-contas">—</div><div class="sum-sub">fixas + assinaturas</div></div>
@@ -1013,11 +1049,54 @@ let variaveisBase=[
 // variaveisBase carregadas do Supabase em loadData()
 
 // ===== SUB-TABS =====
+// ===== TOGGLE SENHA LOGIN =====
+function toggleSenhaLogin(){
+  const inp = document.getElementById('login-password');
+  const btn = document.getElementById('eye-login');
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.innerHTML = show
+    ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+    : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+}
+
+// ===== TOGGLE SALÁRIOS — independente por card =====
+const SVG_EYE      = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+const SVG_EYE_OFF  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+const _salVisible  = { buti: false, bita: false, total: false };
+
+function toggleSalario(who) {
+  _salVisible[who] = !_salVisible[who];
+  const show = _salVisible[who];
+  const btn  = document.getElementById('eye-' + who);
+  if (btn) btn.innerHTML = show ? SVG_EYE_OFF : SVG_EYE;
+  if (who === 'buti') {
+    const base  = document.getElementById('salary-buti-base');
+    const bonus = document.getElementById('salary-buti-bonus');
+    base.textContent  = show ? fmtR(salarios.buti.base)  : '••••';
+    bonus.textContent = show ? fmtR(salarios.buti.bonus) : '••••';
+  } else if (who === 'bita') {
+    const base  = document.getElementById('salary-bita-base');
+    const bonus = document.getElementById('salary-bita-bonus');
+    base.textContent  = show ? (salarios.bita.base > 0  ? fmtR(salarios.bita.base)  : '—') : '••••';
+    bonus.textContent = show ? (salarios.bita.bonus > 0 ? fmtR(salarios.bita.bonus) : '—') : '••••';
+  } else if (who === 'total') {
+    const tot = salarios.buti.base + salarios.buti.bonus + salarios.bita.base + salarios.bita.bonus;
+    document.getElementById('salary-total').textContent = show ? fmtR(tot) : '••••';
+  }
+}
+
 function showSubTab(id){
   document.querySelectorAll('.subtab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.sub-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('subtab-'+id).classList.add('active');
   document.getElementById('subbtn-'+id).classList.add('active');
+  // Limpa campos de salário sempre que a sub-aba for aberta
+  if(id==='salario'){
+    ['sal-buti-base','sal-buti-bonus','sal-bita-base','sal-bita-bonus'].forEach(f=>{
+      document.getElementById(f).value='';
+    });
+  }
 }
 
 // ===== SALÁRIOS =====
@@ -1133,11 +1212,7 @@ async function loadData(){
     }catch(_){}
   }
 
-  // Sincronizar inputs de salário com valores carregados
-  document.getElementById('sal-buti-base').value=salarios.buti.base||'';
-  document.getElementById('sal-buti-bonus').value=salarios.buti.bonus||'';
-  document.getElementById('sal-bita-base').value=salarios.bita.base||'';
-  document.getElementById('sal-bita-bonus').value=salarios.bita.bonus||'';
+  // Campos de salário ficam limpos — são preenchidos apenas quando o usuário abre a sub-aba
 }
 async function sincronizarPagamentosMes(){
   const ids=new Set(pagamentosDB.map(p=>p.conta_id));
@@ -1230,13 +1305,13 @@ function makeCard(c,showToggle=true){
 function renderAll(){renderDashboard();renderContas();renderGastos();}
 
 function renderDashboard(){
-  // Salary cards
+  // Salary cards — respeita estado de visibilidade individual
   const totalSalario = salarios.buti.base + salarios.buti.bonus + salarios.bita.base + salarios.bita.bonus;
-  document.getElementById('salary-buti-base').textContent = fmtR(salarios.buti.base);
-  document.getElementById('salary-buti-bonus').textContent = fmtR(salarios.buti.bonus);
-  document.getElementById('salary-bita-base').textContent = salarios.bita.base > 0 ? fmtR(salarios.bita.base) : '—';
-  document.getElementById('salary-bita-bonus').textContent = salarios.bita.bonus > 0 ? fmtR(salarios.bita.bonus) : '—';
-  document.getElementById('salary-total').textContent = fmtR(totalSalario);
+  document.getElementById('salary-buti-base').textContent  = _salVisible.buti  ? fmtR(salarios.buti.base)  : '••••';
+  document.getElementById('salary-buti-bonus').textContent = _salVisible.buti  ? fmtR(salarios.buti.bonus) : '••••';
+  document.getElementById('salary-bita-base').textContent  = _salVisible.bita  ? (salarios.bita.base > 0  ? fmtR(salarios.bita.base)  : '—') : '••••';
+  document.getElementById('salary-bita-bonus').textContent = _salVisible.bita  ? (salarios.bita.bonus > 0 ? fmtR(salarios.bita.bonus) : '—') : '••••';
+  document.getElementById('salary-total').textContent      = _salVisible.total ? fmtR(totalSalario) : '••••';
 
   const manuais=contasDB.filter(c=>c.dia>0&&c.cat!=='assinatura');
   const sorted=[...manuais].sort((a,b)=>{const da=a.dia>=DIA_HOJE?a.dia-DIA_HOJE:31+a.dia-DIA_HOJE,db=b.dia>=DIA_HOJE?b.dia-DIA_HOJE:31+b.dia-DIA_HOJE;return da-db;});
@@ -1656,7 +1731,7 @@ setInterval(async()=>{
     const pagChanged = JSON.stringify(n)!==JSON.stringify(pagamentosDB);
     if(pagChanged||salChanged||varChanged){
       pagamentosDB=n; avulsosDB=av;
-      if(salChanged){ salarios=salDb; document.getElementById('sal-buti-base').value=salarios.buti.base||''; document.getElementById('sal-buti-bonus').value=salarios.buti.bonus||''; document.getElementById('sal-bita-base').value=salarios.bita.base||''; document.getElementById('sal-bita-bonus').value=salarios.bita.bonus||''; }
+      if(salChanged){ salarios=salDb; }
       if(varChanged) variaveisBase=varDb;
       renderAll(); setSyncStatus('online','atualizado');
     }

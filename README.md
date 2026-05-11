@@ -33,7 +33,7 @@ PWA de controle financeiro pessoal com sincronização em tempo real.
 
 ```
 .
-├── financeiro-pessoal.html       # App completo
+├── index.html       # App completo
 ├── README.md
 ├── package.json
 ├── unit/

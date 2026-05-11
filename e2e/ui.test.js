@@ -16,12 +16,12 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ─── Lê o HTML do app para extração de funções ────────────────────────────────
-const HTML_PATH = resolve(__dirname, '../financeiro-pessoal.html');
+const HTML_PATH = resolve(__dirname, '../index.html');
 let appHtml = '';
 try {
   appHtml = readFileSync(HTML_PATH, 'utf-8');
 } catch (e) {
-  appHtml = readFileSync(resolve(__dirname, '../financeiro-pessoal.html'), 'utf-8').toString();
+  appHtml = readFileSync(resolve(__dirname, '../index.html'), 'utf-8').toString();
 }
 
 // ─── Extrai bloco <script> do app ────────────────────────────────────────────

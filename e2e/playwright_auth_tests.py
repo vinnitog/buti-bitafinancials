@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright, Page
 
-APP_PATH = "file:///C:/Users/Togszera/Desktop/APP - Controle Finanças/financeiro-pessoal.html"
+APP_PATH = "file:///C:/Users/Togszera/Desktop/APP - Controle Finanças/index.html"
 
 PASS = "\033[92m✓\033[0m"
 FAIL = "\033[91m✗\033[0m"

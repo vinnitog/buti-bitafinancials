@@ -16,7 +16,15 @@ import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright, Page
 
-APP_PATH = "file:///C:/Users/Togszera/Desktop/APP - Controle Finanças/index.html"
+# Dados sensíveis carregados do config.py (não versionado)
+# Copie e2e/config.py.example para e2e/config.py e preencha com seus dados
+try:
+    from config import APP_PATH, EMAIL_BUTI, EMAIL_BITA, UUID_BUTI, UUID_BITA
+except ImportError:
+    raise SystemExit(
+        "\n❌ Arquivo e2e/config.py não encontrado.\n"
+        "   Copie config.py.example para config.py e preencha com seus dados.\n"
+    )
 
 PASS = "\033[92m✓\033[0m"
 FAIL = "\033[91m✗\033[0m"
@@ -28,8 +36,8 @@ MOCK_TOKEN_BUTI = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock_buti_token"
 MOCK_TOKEN_BITA = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock_bita_token"
 MOCK_REFRESH    = "mock_refresh_token_12345"
 
-MOCK_USER_BUTI = {"id": "uuid-buti", "email": "buti@butibita.app"}
-MOCK_USER_BITA = {"id": "uuid-bita", "email": "bita@butibita.app"}
+MOCK_USER_BUTI = {"id": UUID_BUTI, "email": EMAIL_BUTI}
+MOCK_USER_BITA = {"id": UUID_BITA, "email": EMAIL_BITA}
 
 AUTH_SUCCESS_BUTI = {
     "access_token": MOCK_TOKEN_BUTI,
@@ -243,7 +251,7 @@ def test_campos_vazios_bloqueiam_login(page):
 def test_so_email_bloqueado(page):
     """TC-AUTH-004 Só email sem senha mostra erro de validação."""
     load_fresh(page, clear_session=True)
-    page.locator("#login-email").fill("buti@butibita.app")
+    page.locator("#login-email").fill(EMAIL_BUTI)
     page.locator("#btn-login").click()
     page.wait_for_timeout(300)
     assert page.locator("#login-error").is_visible()
@@ -312,7 +320,7 @@ def test_erro_limpo_ao_digitar_novamente(page):
 def test_enter_email_vai_para_senha(page):
     """TC-AUTH-007 Enter no campo email move foco para senha."""
     load_fresh(page, clear_session=True)
-    page.locator("#login-email").fill("buti@butibita.app")
+    page.locator("#login-email").fill(EMAIL_BUTI)
     page.locator("#login-email").press("Enter")
     page.wait_for_timeout(200)
     # Verificar se o campo senha tem foco
@@ -324,7 +332,7 @@ def test_enter_senha_dispara_login(page):
     """TC-AUTH-008 Enter na senha submete o formulário."""
     mock_auth_success(page)
     load_fresh(page, clear_session=True)
-    page.locator("#login-email").fill("buti@butibita.app")
+    page.locator("#login-email").fill(EMAIL_BUTI)
     page.locator("#login-password").fill("senha123")
     page.locator("#login-password").press("Enter")
     page.wait_for_timeout(1000)
@@ -360,7 +368,7 @@ def test_spinner_aparece_durante_login(page):
     page.route("**/*", slow_handle)
     load_fresh(page, clear_session=True)
 
-    page.locator("#login-email").fill("buti@butibita.app")
+    page.locator("#login-email").fill(EMAIL_BUTI)
     page.locator("#login-password").fill("senha123")
     page.locator("#btn-login").click()
 
@@ -386,7 +394,7 @@ def test_login_sucesso_oculta_tela(page):
     """TC-AUTH-010 Após login bem-sucedido, tela de login fica oculta."""
     mock_auth_success(page)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     cls = page.locator("#login-screen").get_attribute("class")
     assert "hidden" in cls, "Tela de login deveria estar oculta após login"
 
@@ -395,7 +403,7 @@ def test_app_shell_visivel_apos_login(page):
     """TC-AUTH-010 App shell (header/nav) fica visível após login."""
     mock_auth_success(page)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     display = page.evaluate("document.getElementById('app-shell').style.display")
     assert display == "flex", f"app-shell deveria ser flex, got: {display}"
 
@@ -408,7 +416,7 @@ def test_chip_buti_aparece_apos_login(page):
     """TC-AUTH-011 Chip mostra 'Buti · Sair' após login como Buti."""
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     label = page.locator("#user-label").inner_text()
     assert "Buti" in label, f"Esperado 'Buti' no chip, got: '{label}'"
     assert "Sair" in label, "Chip deveria mostrar 'Sair'"
@@ -418,7 +426,7 @@ def test_chip_buti_cor_verde(page):
     """TC-AUTH-011 Avatar do Buti tem cor verde (#a8bc48)."""
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     bg = page.evaluate("document.getElementById('user-avatar').style.background")
     assert "a8bc48" in bg.lower() or "rgb(168, 188, 72)" in bg.lower(), \
         f"Cor do avatar Buti incorreta: {bg}"
@@ -428,7 +436,7 @@ def test_chip_bita_aparece_apos_login(page):
     """TC-AUTH-012 Chip mostra 'Bita · Sair' após login como Bita."""
     mock_auth_success(page, MOCK_USER_BITA, MOCK_TOKEN_BITA)
     load_fresh(page, clear_session=True)
-    do_login(page, "bita@butibita.app", "senha123")
+    do_login(page, EMAIL_BITA, "senha123")
     label = page.locator("#user-label").inner_text()
     assert "Bita" in label, f"Esperado 'Bita' no chip, got: '{label}'"
 
@@ -437,7 +445,7 @@ def test_chip_bita_cor_roxa(page):
     """TC-AUTH-012 Avatar da Bita tem cor roxa (#c084fc)."""
     mock_auth_success(page, MOCK_USER_BITA, MOCK_TOKEN_BITA)
     load_fresh(page, clear_session=True)
-    do_login(page, "bita@butibita.app", "senha123")
+    do_login(page, EMAIL_BITA, "senha123")
     bg = page.evaluate("document.getElementById('user-avatar').style.background")
     assert "c084fc" in bg.lower() or "rgb(192, 132, 252)" in bg.lower(), \
         f"Cor do avatar Bita incorreta: {bg}"
@@ -447,7 +455,7 @@ def test_chip_inicial_correta(page):
     """TC-AUTH-011 Avatar exibe a inicial correta do email."""
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     inicial = page.locator("#user-avatar").inner_text()
     assert inicial.strip() == "B", f"Inicial esperada 'B', got: '{inicial}'"
 
@@ -460,7 +468,7 @@ def test_pessoa_ativa_buti_apos_login(page):
     """TC-AUTH-013 Login como Buti define PESSOA_ATIVA = 'Buti'."""
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     # Navegar para +Novo e verificar qual botão está ativo
     page.locator(".nav-btn").nth(3).click()
     page.wait_for_timeout(300)
@@ -472,7 +480,7 @@ def test_pessoa_ativa_bita_apos_login(page):
     """TC-AUTH-013 Login como Bita define PESSOA_ATIVA = 'Bita'."""
     mock_auth_success(page, MOCK_USER_BITA, MOCK_TOKEN_BITA)
     load_fresh(page, clear_session=True)
-    do_login(page, "bita@butibita.app", "senha123")
+    do_login(page, EMAIL_BITA, "senha123")
     page.locator(".nav-btn").nth(3).click()
     page.wait_for_timeout(300)
     bita_class = page.locator("#pessoa-btn-esposa").get_attribute("class")
@@ -487,7 +495,7 @@ def test_logout_exige_confirmacao(page):
     """TC-AUTH-014 Clicar no chip 'Sair' abre modal de confirmação."""
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     page.locator("#user-chip").click()
     page.wait_for_timeout(400)
     cls = page.locator("#confirm-overlay").get_attribute("class")
@@ -498,7 +506,7 @@ def test_cancelar_logout_permanece_logado(page):
     """TC-AUTH-014 Cancelar o logout mantém o usuário logado."""
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     page.locator("#user-chip").click()
     page.wait_for_timeout(400)
     page.locator("#confirm-overlay .btn-secondary").click()
@@ -512,7 +520,7 @@ def test_confirmar_logout_volta_ao_login(page):
     """TC-AUTH-015 Confirmar logout exibe tela de login."""
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     page.locator("#user-chip").click()
     page.wait_for_timeout(400)
     page.locator("#confirm-ok-btn").click()
@@ -525,7 +533,7 @@ def test_logout_remove_sessao_localstorage(page):
     """TC-AUTH-015 Logout remove sb_session do localStorage."""
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     page.locator("#user-chip").click()
     page.wait_for_timeout(400)
     page.locator("#confirm-ok-btn").click()
@@ -538,7 +546,7 @@ def test_campos_limpos_apos_logout(page):
     """TC-AUTH-016 Campos de email e senha estão vazios após logout."""
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     page.locator("#user-chip").click()
     page.wait_for_timeout(400)
     page.locator("#confirm-ok-btn").click()
@@ -553,7 +561,7 @@ def test_estado_app_limpo_apos_logout(page):
     """TC-AUTH-015 Dados em memória são limpos após logout (BUG-5 fix)."""
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     page.locator("#user-chip").click()
     page.wait_for_timeout(400)
     page.locator("#confirm-ok-btn").click()
@@ -674,7 +682,7 @@ def test_regressao_dashboard_carrega_apos_login(page):
     """REGR-001 Dashboard carrega normalmente após login."""
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     assert page.locator("#section-dashboard").is_visible()
     assert page.locator(".salary-grid").is_visible()
 
@@ -683,7 +691,7 @@ def test_regressao_navegacao_funciona_apos_login(page):
     """REGR-002 Todas as abas navegam normalmente após login."""
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     for i in range(6):
         page.locator(".nav-btn").nth(i).click()
         page.wait_for_timeout(200)
@@ -695,7 +703,7 @@ def test_regressao_tema_toggle_funciona_apos_login(page):
     """REGR-003 Toggle de tema funciona após login."""
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     bg_antes = page.evaluate("getComputedStyle(document.body).backgroundColor")
     page.locator(".theme-toggle").click()
     page.wait_for_timeout(400)
@@ -707,7 +715,7 @@ def test_regressao_chip_usuario_visivel_em_todas_abas(page):
     """REGR-004 Chip de usuário persiste em todas as abas após login."""
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     for i in range(6):
         page.locator(".nav-btn").nth(i).click()
         page.wait_for_timeout(200)
@@ -721,7 +729,7 @@ def test_regressao_nenhum_erro_js(page):
     page.on("pageerror", lambda e: errors.append(str(e)))
     mock_auth_success(page, MOCK_USER_BUTI, MOCK_TOKEN_BUTI)
     load_fresh(page, clear_session=True)
-    do_login(page, "buti@butibita.app", "senha123")
+    do_login(page, EMAIL_BUTI, "senha123")
     # Filtrar erros esperados (ex: service worker em file://)
     erros_reais = [e for e in errors if "service" not in e.lower() and "sw" not in e.lower()]
     assert len(erros_reais) == 0, f"Erros JS encontrados: {erros_reais}"

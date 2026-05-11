@@ -1,5 +1,6 @@
 # ===== SEGURANÇA — nunca versionar =====
 SECURITY.md
+e2e/config.py
 
 # ===== DEPENDÊNCIAS =====
 node_modules/

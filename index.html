@@ -625,7 +625,7 @@ body {
     <div class="progress-label"><span style="font-weight:600">Contas quitadas este mês</span><span id="progress-pct" style="color:var(--accent2);font-weight:700">0%</span></div>
     <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%;background:var(--accent)"></div></div>
   </div>
-  <div class="sec-title">Vencimentos próximos <span class="sec-badge badge-red" id="urgentes-badge">0 urgentes</span></div>
+  <div class="sec-title">Vencimentos próximos</div>
   <div id="proximos-list"><div class="loading"><div class="spinner"></div>carregando...</div></div>
 </div>
 
@@ -687,6 +687,12 @@ body {
         <option value="auto">Débito automático</option>
         <option value="credito">Cartão de crédito</option>
       </select>
+    </div>
+    <div class="form-group"><label class="form-label">Emoji / Ícone</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="form-input" type="text" id="new-emoji" placeholder="⚡" maxlength="2" style="width:60px;text-align:center;font-size:22px;padding:6px">
+        <span style="font-size:12px;color:var(--text2);flex:1">Deixe vazio para usar o padrão da categoria</span>
+      </div>
     </div>
     <div class="form-group"><label class="form-label">Observação (opcional)</label><input class="form-input" type="text" id="new-obs" placeholder="Ex: dividido com esposa"></div>
     <div id="new-ja-pago-wrap" style="display:none;margin-bottom:12px;">
@@ -763,14 +769,11 @@ body {
 
 <!-- CONFIG -->
 <div class="section" id="section-config">
+  <button class="btn-secondary" onclick="reloadData()" style="margin-bottom:16px">🔄 Sincronizar agora</button>
   <div class="sec-title">Notificações</div>
   <div class="notif-row"><div><div class="notif-title">🔔 Push notifications</div><div class="notif-sub">Alertas direto no celular</div></div><div class="toggle-switch" id="toggle-notif" onclick="toggleSwitch('toggle-notif',true)"></div></div>
   <div class="notif-row"><div><div class="notif-title">⚡ Aviso 3 dias antes</div><div class="notif-sub">Alerta antecipado de vencimento</div></div><div class="toggle-switch on" id="toggle-early" onclick="toggleSwitch('toggle-early',false)"></div></div>
   <div class="notif-row"><div><div class="notif-title">🚨 Alerta no dia do vencimento</div><div class="notif-sub">Lembrete às 8h na data de pagar</div></div><div class="toggle-switch on" id="toggle-dia" onclick="toggleSwitch('toggle-dia',false)"></div></div>
-  <div class="divider"></div>
-  <div class="sec-title">Conexão Supabase</div>
-  <div class="notif-row"><div><div class="notif-title" id="db-status-title">Verificando...</div><div class="notif-sub" id="db-status-sub">conectando ao banco de dados</div></div><span class="sync-dot" id="db-dot" style="width:10px;height:10px"></span></div>
-  <button class="btn-secondary" onclick="reloadData()" style="margin-top:4px">🔄 Sincronizar agora</button>
   <div class="divider"></div>
   <div class="sec-title" style="color:var(--red)">Zona de perigo</div>
   <button class="btn-danger" onclick="fecharMes()">🗂 Fechar mês atual e iniciar novo</button>
@@ -965,7 +968,7 @@ async function entrarNoApp() {
   const isBita    = localPart === 'bita' || localPart.startsWith('bita');
   document.getElementById('user-avatar').textContent = inicial;
   document.getElementById('user-avatar').style.background = isBita ? '#c084fc' : '#a8bc48';
-  document.getElementById('user-label').textContent = isBita ? 'Bita · Sair' : isButi ? 'Buti · Sair' : localPart + ' · Sair';
+  document.getElementById('user-label').textContent = isBita ? 'Bita' : isButi ? 'Buti' : localPart;
   // Define pessoa ativa pelo login
   if (isButi) setPessoa('Buti');
   else if (isBita) setPessoa('Bita');
@@ -976,6 +979,7 @@ async function entrarNoApp() {
     aplicarTema(isBita ? 'purple' : 'olive');
   }
   await init();
+  // init() já carrega todos os dados via loadData() — sem reloadData() redundante
 }
 
 // ===== SUPABASE API (usa JWT do usuário logado) =====
@@ -1151,7 +1155,7 @@ async function init(){
       agendarAlertasLocais();
     }
   }
-  catch(e){setSyncStatus('offline','sem conexão');showToast('Erro: '+e.message);}
+  catch(e){setSyncStatus('offline','sem conexão');showToast('Sincronize as contas do casal');}
 }
 
 async function startup() {
@@ -1226,10 +1230,7 @@ async function reloadData(){setSyncStatus('syncing','sincronizando...');try{awai
 // ===== HELPERS =====
 function setSyncStatus(s,m){
   const d=document.getElementById('sync-dot'),t=document.getElementById('sync-status');
-  const dd=document.getElementById('db-dot'),dt=document.getElementById('db-status-title'),ds=document.getElementById('db-status-sub');
-  d.className='sync-dot '+s;if(dd)dd.className='sync-dot '+s;t.textContent=m;
-  if(s==='online'){if(dt)dt.textContent='✓ Conectado ao Supabase';if(ds)ds.textContent='Dados compartilhados em tempo real';}
-  else if(s==='offline'){if(dt)dt.textContent='✗ Sem conexão';if(ds)ds.textContent='Verifique sua internet';}
+  d.className='sync-dot '+s; t.textContent=m;
 }
 function fmtR(v){return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});}
 
@@ -1268,7 +1269,7 @@ function setPessoa(n){
 }
 
 // ===== RENDER =====
-function makeCard(c,showToggle=true){
+function makeCard(c,showToggle=true,panelMode=false){
   const pag=getPag(c.id),isPago=pag?pag.pago:(c.tipo==='auto'),isAuto=c.tipo==='auto',urg=getUrg(c.dia);
   let sc,sl;
   if(isPago){sc='status-paid';sl='✓ pago';}
@@ -1282,7 +1283,7 @@ function makeCard(c,showToggle=true){
   const paidCls=isPago?' paid':'';
   const amtColor=isPago?'var(--green)':'var(--text)';
   const autoTag=isAuto?'<span class="tag-auto">AUTO</span>':'';
-  const pagoPor=(pag&&pag.pago&&pag.pago_por&&pag.pago_por!=='auto')?`<span class="chip chip-accent">${escHtml(pag.pago_por)}</span>`:'';
+  const _ppor=pag?.pago_por||''; const pagoPor=(_ppor&&_ppor!=='auto')?`<span class="chip chip-accent">${escHtml(_ppor)}</span>`:'';
   const toggleBtn=(showToggle&&!isAuto)?`<button class="toggle-paid ${isPago?'checked':''}" onclick="togglePago(${c.id},event)">${isPago?'✓':''}</button>`:'';
   const editBtn=`<button class="edit-btn" onclick="editConta(${c.id})" title="Editar">✏️</button>`;
   return `<div class="bill-card${urgCls}${paidCls}" id="card-${c.id}">
@@ -1290,7 +1291,7 @@ function makeCard(c,showToggle=true){
     <div class="bill-icon" style="background:${catBg[c.cat]||'var(--surface2)'}">${c.emoji}</div>
     <div class="bill-info">
       <div class="bill-name">${escHtml(c.nome)}${autoTag}${pagoPor}</div>
-      <div class="bill-due">${dueLabel(c.dia)}${c.obs?' • '+escHtml(c.obs):''}</div>
+      <div class="bill-due">${panelMode ? (c.dia ? 'Dia '+c.dia : 'Débito automático') : dueLabel(c.dia)}${c.obs&&!panelMode?' • '+escHtml(c.obs):''}</div>
     </div>
     <div class="bill-right">
       <div class="bill-right-vals">
@@ -1316,7 +1317,7 @@ function renderDashboard(){
   const manuais=contasDB.filter(c=>c.dia>0&&c.cat!=='assinatura');
   const sorted=[...manuais].sort((a,b)=>{const da=a.dia>=DIA_HOJE?a.dia-DIA_HOJE:31+a.dia-DIA_HOJE,db=b.dia>=DIA_HOJE?b.dia-DIA_HOJE:31+b.dia-DIA_HOJE;return da-db;});
   const proximos=sorted.filter(c=>{const d=c.dia-DIA_HOJE;return d>=-7&&d<=10;}).slice(0,7);
-  document.getElementById('proximos-list').innerHTML=proximos.length?proximos.map(c=>makeCard(c)).join(''):'<div class="empty-state"><div class="empty-icon">🎉</div>Nenhum vencimento próximo!</div>';
+  document.getElementById('proximos-list').innerHTML=proximos.length?proximos.map(c=>makeCard(c,true,true)).join(''):'<div class="empty-state"><div class="empty-icon">🎉</div>Nenhum vencimento próximo!</div>';
 
   const fixasV=contasDB.filter(c=>c.dia>0&&c.cat!=='assinatura').reduce((a,c)=>a+Number(c.valor),0);
   const autosV=contasDB.filter(c=>c.tipo==='auto'&&c.cat!=='assinatura').reduce((a,c)=>a+Number(c.valor),0);
@@ -1341,9 +1342,9 @@ function renderDashboard(){
 
   const urgentes=contasManuais.filter(c=>{const p=getPag(c.id),u=getUrg(c.dia);return(!p||!p.pago)&&(u==='urgente'||u==='hoje'||u==='vencida');});
   const ac=document.getElementById('alert-count');
-  if(urgentes.length>0){ac.textContent=`⚠ ${urgentes.length} alerta${urgentes.length>1?'s':''}`;ac.style.display='block';}
+  if(urgentes.length>0){ac.textContent=`⚠ ${urgentes.length}`;ac.style.display='block';}
   else ac.style.display='none';
-  document.getElementById('urgentes-badge').textContent=`${urgentes.length} urgente${urgentes.length!==1?'s':''}`;
+  // urgentes-badge removido
 
   document.getElementById('alert-area').innerHTML=urgentes.map(u=>{
     const d=u.dia-DIA_HOJE;
@@ -1478,16 +1479,19 @@ async function addConta(){
   const jaPago=document.getElementById('new-ja-pago').checked;
   if(!nome){showToast('Informe o nome da conta');return;}
   const em={financiamento:'📄',fixa:'🏠',assinatura:'📺',variavel:'💳'};
+  const emojiField = document.getElementById('new-emoji');
+  const selectedEmoji = emojiField ? emojiField.value.trim() : '';
   const btn=document.getElementById('btn-add-conta');btn.disabled=true;btn.textContent='salvando...';
   setSyncStatus('syncing','salvando...');
   try{
-    const[nova]=await sbPost('contas',{nome,emoji:em[cat]||'💰',valor,dia,cat,tipo,obs,ativo:true});
+    const emojiUsar=selectedEmoji||(em[cat]||'💰');
+    const[nova]=await sbPost('contas',{nome,emoji:emojiUsar,valor,dia,cat,tipo,obs,ativo:true,criado_por:PESSOA_ATIVA});
     const isA=tipo==='auto',deve=isA||jaPago;
-    await sbPost('pagamentos',{conta_id:nova.id,nome,emoji:em[cat]||'💰',valor,cat,tipo,obs,dia,mes:MES_ATUAL,ano:ANO_ATUAL,pago:deve,pago_em:deve?new Date().toISOString():null,pago_por:deve?(isA?'auto':PESSOA_ATIVA):''});
+    await sbPost('pagamentos',{conta_id:nova.id,nome,emoji:emojiUsar,valor,cat,tipo,obs,dia,mes:MES_ATUAL,ano:ANO_ATUAL,pago:deve,pago_em:deve?new Date().toISOString():null,pago_por:deve?(isA?'auto':PESSOA_ATIVA):''});
     contasDB=await sbGet('contas','ativo=eq.true&order=cat,dia');
     pagamentosDB=await sbGet('pagamentos',`mes=eq.${MES_ATUAL}&ano=eq.${ANO_ATUAL}`);
     setSyncStatus('online','sincronizado');
-    ['new-name','new-valor','new-dia','new-obs'].forEach(id=>document.getElementById(id).value='');
+    ['new-name','new-valor','new-dia','new-obs','new-emoji'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('new-ja-pago').checked=false;
     document.getElementById('new-ja-pago-wrap').style.display='none';
     renderAll();showSection('contas',document.querySelectorAll('.nav-btn')[1]);showToast(`"${nome}" cadastrada ✓`);
@@ -1537,6 +1541,11 @@ function editConta(id){
   document.getElementById('modal-body').innerHTML=`
     <div class="form-group"><label class="form-label">Nome</label><input class="form-input" id="edit-nome" value="${c.nome}"></div>
     <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-input" type="number" id="edit-valor" value="${c.valor}" step="0.01" min="0"></div>
+    <div class="form-group"><label class="form-label">Emoji / Ícone</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="form-input" type="text" id="edit-emoji" value="${escHtml(c.emoji||'')}" maxlength="2" style="width:60px;text-align:center;font-size:22px;padding:6px">
+        <span style="font-size:12px;color:var(--text2);flex:1">Ícone exibido no card da conta</span>
+      </div></div>
     <div class="form-group"><label class="form-label">Observação</label><input class="form-input" id="edit-obs" value="${c.obs||''}"></div>
     <button class="btn-primary" onclick="salvarEdicaoConta(${id})">Salvar alterações</button>
     <button class="btn-secondary" onclick="closeModal()" style="margin-top:6px">Cancelar</button>`;
@@ -1607,7 +1616,7 @@ async function confirmCSVImport(){
   if(!csvPendente.length)return;setSyncStatus('syncing','importando...');
   try{
     const em={financiamento:'📄',fixa:'🏠',assinatura:'📺',variavel:'💳'};
-    for(const r of csvPendente){const[nova]=await sbPost('contas',{...r,emoji:em[r.cat]||'💰',ativo:true});await sbPost('pagamentos',{conta_id:nova.id,nome:r.nome,emoji:em[r.cat]||'💰',valor:r.valor,cat:r.cat,tipo:r.tipo,obs:r.obs,dia:r.dia,mes:MES_ATUAL,ano:ANO_ATUAL,pago:r.tipo==='auto',pago_em:r.tipo==='auto'?new Date().toISOString():null,pago_por:r.tipo==='auto'?'auto':''});}
+    for(const r of csvPendente){const[nova]=await sbPost('contas',{...r,emoji:em[r.cat]||'💰',ativo:true,criado_por:PESSOA_ATIVA});await sbPost('pagamentos',{conta_id:nova.id,nome:r.nome,emoji:em[r.cat]||'💰',valor:r.valor,cat:r.cat,tipo:r.tipo,obs:r.obs,dia:r.dia,mes:MES_ATUAL,ano:ANO_ATUAL,pago:r.tipo==='auto',pago_em:r.tipo==='auto'?new Date().toISOString():null,pago_por:r.tipo==='auto'?'auto':''});}
     contasDB=await sbGet('contas','ativo=eq.true&order=cat,dia');pagamentosDB=await sbGet('pagamentos',`mes=eq.${MES_ATUAL}&ano=eq.${ANO_ATUAL}`);
     setSyncStatus('online','sincronizado');cancelCSV();renderAll();showToast(`${csvPendente.length} contas importadas ✓`);csvPendente=[];
   }catch(e){setSyncStatus('offline','erro');showToast('Erro: '+e.message);}

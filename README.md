@@ -7,9 +7,11 @@ PWA de controle financeiro pessoal com sincronização em tempo real.
 ## O que faz
 
 - Painel com resumo mensal, alertas de vencimento e saldo estimado
+- Vencimentos próximos filtrados por status — contas pagas somem automaticamente da lista
 - Cadastro e acompanhamento de contas fixas, financiamentos e assinaturas
 - Ícone personalizável por conta (na criação e na edição)
-- Marcação de contas pagas com identificação de quem pagou
+- Exclusão de contas (soft delete — histórico preservado) e gastos avulsos
+- Marcação de contas pagas com identificação de quem pagou ou editou por último
 - Registro de gastos avulsos por categoria e por usuário
 - Histórico mensal com extrato completo
 - Sincronização em tempo real entre dispositivos via banco de dados na nuvem
@@ -45,7 +47,7 @@ PWA de controle financeiro pessoal com sincronização em tempo real.
 └── e2e/
     ├── playwright_tests.py           # Testes de UI
     ├── playwright_auth_tests.py      # Testes de autenticação
-    ├── playwright_features_tests.py  # Testes de novas funcionalidades
+    ├── playwright_features_tests.py  # Testes de funcionalidades e correções
     └── config.py.example             # Template de configuração (copiar para config.py)
 ```
 
@@ -111,7 +113,7 @@ python e2e/playwright_tests.py
 python e2e/playwright_auth_tests.py
 ```
 
-### E2E — Novas funcionalidades
+### E2E — Funcionalidades
 
 ```bash
 python e2e/playwright_features_tests.py
@@ -126,8 +128,8 @@ Para ver o browser abrindo em qualquer suite, localize `chromium.launch` e troqu
 | Unitários | `unit/helpers.test.js` + `supabase.test.js` | 73 |
 | E2E UI | `playwright_tests.py` | 48 |
 | E2E Auth | `playwright_auth_tests.py` | 37 |
-| E2E Features | `playwright_features_tests.py` | 18 |
-| **Total** | | **176** |
+| E2E Features | `playwright_features_tests.py` | 37 |
+| **Total** | | **195** |
 
 ---
 

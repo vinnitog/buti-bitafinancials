@@ -195,6 +195,14 @@ body {
   line-height:1;
 }
 .edit-btn:hover { opacity:1; }
+.del-btn {
+  background:none; border:none; cursor:pointer;
+  font-size:14px; padding:4px; color:var(--red);
+  opacity:0.4; transition:opacity 0.15s; flex-shrink:0;
+  line-height:1;
+}
+.del-btn:hover { opacity:0.9; }
+.card-actions { display:flex; gap:0; align-items:center; }
 
 /* TOGGLE PAGO */
 .toggle-paid {
@@ -1283,9 +1291,13 @@ function makeCard(c,showToggle=true,panelMode=false){
   const paidCls=isPago?' paid':'';
   const amtColor=isPago?'var(--green)':'var(--text)';
   const autoTag=isAuto?'<span class="tag-auto">AUTO</span>':'';
-  const _ppor=pag?.pago_por||''; const pagoPor=(_ppor&&_ppor!=='auto')?`<span class="chip chip-accent">${escHtml(_ppor)}</span>`:'';
+  const _ppor=pag?.pago_por||'';
+  // Chip de pessoa: prioridade pago_por (se pago por alguém), senão criado_por (quem criou/editou)
+  const _pessoa = (_ppor && _ppor!=='auto') ? _ppor : (c.criado_por||'');
+  const pagoPor = _pessoa ? `<span class="chip chip-accent">${escHtml(_pessoa)}</span>` : '';
   const toggleBtn=(showToggle&&!isAuto)?`<button class="toggle-paid ${isPago?'checked':''}" onclick="togglePago(${c.id},event)">${isPago?'✓':''}</button>`:'';
   const editBtn=`<button class="edit-btn" onclick="editConta(${c.id})" title="Editar">✏️</button>`;
+  const delBtn=!panelMode?`<button class="del-btn" onclick="deleteConta(${c.id})" title="Excluir conta">🗑</button>`:'';
   return `<div class="bill-card${urgCls}${paidCls}" id="card-${c.id}">
     ${toggleBtn}
     <div class="bill-icon" style="background:${catBg[c.cat]||'var(--surface2)'}">${c.emoji}</div>
@@ -1298,7 +1310,7 @@ function makeCard(c,showToggle=true,panelMode=false){
         <div class="bill-amount" style="color:${amtColor}">${c.valor>0?fmtR(c.valor):'—'}</div>
         <div class="bill-status ${sc}">${sl}</div>
       </div>
-      ${editBtn}
+      <div class="card-actions">${editBtn}${delBtn}</div>
     </div>
   </div>`;
 }
@@ -1316,7 +1328,13 @@ function renderDashboard(){
 
   const manuais=contasDB.filter(c=>c.dia>0&&c.cat!=='assinatura');
   const sorted=[...manuais].sort((a,b)=>{const da=a.dia>=DIA_HOJE?a.dia-DIA_HOJE:31+a.dia-DIA_HOJE,db=b.dia>=DIA_HOJE?b.dia-DIA_HOJE:31+b.dia-DIA_HOJE;return da-db;});
-  const proximos=sorted.filter(c=>{const d=c.dia-DIA_HOJE;return d>=-7&&d<=10;}).slice(0,7);
+  const proximos=sorted.filter(c=>{
+    const d=c.dia-DIA_HOJE;
+    const pag=getPag(c.id);
+    const isPago=pag?pag.pago:(c.tipo==='auto');
+    // Mostrar só contas NÃO pagas e dentro do janela de 10 dias
+    return !isPago && d>=-7 && d<=10;
+  }).slice(0,7);
   document.getElementById('proximos-list').innerHTML=proximos.length?proximos.map(c=>makeCard(c,true,true)).join(''):'<div class="empty-state"><div class="empty-icon">🎉</div>Nenhum vencimento próximo!</div>';
 
   const fixasV=contasDB.filter(c=>c.dia>0&&c.cat!=='assinatura').reduce((a,c)=>a+Number(c.valor),0);
@@ -1526,6 +1544,25 @@ async function deleteAvulso(id){
   });
 }
 
+async function deleteConta(id){
+  const c=contasDB.find(x=>x.id===id);
+  if(!c)return;
+  showConfirm(
+    `Excluir "${escHtml(c.nome)}"? O histórico de pagamentos será mantido.`,
+    async()=>{
+      setSyncStatus('syncing','salvando...');
+      try{
+        // Soft delete — preserva histórico de pagamentos
+        await sbPatch('contas',id,{ativo:false});
+        contasDB=contasDB.filter(x=>x.id!==id);
+        renderAll();
+        setSyncStatus('online','sincronizado');
+        showToast(`"${escHtml(c.nome)}" excluída`);
+      }catch(e){setSyncStatus('offline','erro');showToast('Erro: '+e.message);}
+    }
+  );
+}
+
 async function fecharMes(){
   showConfirm(
     `Fechar ${nomeMes(MES_ATUAL,ANO_ATUAL)}? Os dados ficam no histórico.`,
@@ -1552,14 +1589,23 @@ function editConta(id){
   document.getElementById('modal-overlay').classList.remove('hidden');
 }
 async function salvarEdicaoConta(id){
-  const nome=document.getElementById('edit-nome').value.trim();
-  const valor=parseFloat(document.getElementById('edit-valor').value)||0;
-  const obs=document.getElementById('edit-obs').value.trim();
+  const nome     = document.getElementById('edit-nome').value.trim();
+  const valor    = parseFloat(document.getElementById('edit-valor').value)||0;
+  const obs      = document.getElementById('edit-obs').value.trim();
+  const emojiEdit= (document.getElementById('edit-emoji')?.value||'').trim();
   if(!nome){showToast('Informe o nome');return;}
   setSyncStatus('syncing','salvando...');
   try{
-    await sbPatch('contas',id,{nome,valor,obs});
-    const pag=getPag(id);if(pag)await sbPatch('pagamentos',pag.id,{nome,valor,obs});
+    // [FIX] emoji e criado_por (quem editou por último) incluídos no PATCH
+    const patchData = {nome,valor,obs,criado_por:PESSOA_ATIVA};
+    if(emojiEdit) patchData.emoji = emojiEdit;
+    await sbPatch('contas',id,patchData);
+    const pag=getPag(id);
+    if(pag){
+      const pagPatch = {nome,valor,obs};
+      if(emojiEdit) pagPatch.emoji = emojiEdit;
+      await sbPatch('pagamentos',pag.id,pagPatch);
+    }
     contasDB=await sbGet('contas','ativo=eq.true&order=cat,dia');
     pagamentosDB=await sbGet('pagamentos',`mes=eq.${MES_ATUAL}&ano=eq.${ANO_ATUAL}`);
     setSyncStatus('online','sincronizado');closeModal();renderAll();showToast(`${nome} atualizado ✓`);

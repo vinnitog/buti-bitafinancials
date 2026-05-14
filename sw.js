@@ -70,12 +70,12 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Push — notificação recebida do servidor (uso futuro)
+// Push — notificação recebida do servidor
 self.addEventListener('push', event => {
-  const data = event.data?.json() ?? {
-    title: 'Buti&Bita Financials',
-    body: 'Você tem contas a verificar!'
-  };
+  let data = { title: 'Buti&Bita Financials', body: 'Verifique seus vencimentos!', tag: 'buti-bita', requireInteraction: false };
+  if (event.data) {
+    try { Object.assign(data, event.data.json()); } catch { data.body = event.data.text(); }
+  }
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
@@ -83,7 +83,8 @@ self.addEventListener('push', event => {
       badge: './icon-32.png',
       tag: data.tag || 'buti-bita',
       requireInteraction: data.requireInteraction || false,
-      data: { url: data.url || './' }
+      vibrate: [200, 100, 200],
+      data: { url: './' }
     })
   );
 });

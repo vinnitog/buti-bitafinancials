@@ -463,6 +463,33 @@ body {
 }
 .btn-login.loading .btn-spinner { display:block; }
 
+/* ===== ENTRADAS DO MÊS ===== */
+.entradas-block { margin-bottom:16px; }
+.entradas-title { font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:10px; }
+.entrada-row {
+  display:flex; align-items:center; gap:8px;
+  background:var(--surface2); border:1px solid var(--border2);
+  border-radius:var(--radius-sm); padding:10px 12px; margin-bottom:8px;
+}
+.entrada-info { flex:1; min-width:0; }
+.entrada-desc { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.entrada-meta { font-size:11px; color:var(--text2); margin-top:2px; }
+.entrada-valor { font-size:14px; font-weight:700; flex-shrink:0; }
+.btn-add-entrada {
+  width:100%; background:var(--surface2); border:1px dashed var(--border2);
+  border-radius:var(--radius-sm); padding:10px; font-size:13px;
+  color:var(--text2); cursor:pointer; font-family:inherit;
+  transition:all 0.15s; margin-bottom:12px; text-align:center;
+}
+.btn-add-entrada:hover { border-color:var(--accent); color:var(--accent); }
+.entradas-total {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 0; border-top:1px solid var(--border2); margin-top:4px;
+  font-size:12px; color:var(--text2);
+}
+.entradas-total-val { font-size:14px; font-weight:700; color:var(--green); }
+.entrada-count { font-size:11px; color:var(--text2); margin-top:2px; }
+
 /* OLHO — senha e salários */
 .input-eye-wrap { position:relative; }
 .input-eye-wrap .form-input { padding-right:42px; }
@@ -601,7 +628,7 @@ body {
         </button>
       </div>
       <div class="salary-amount" id="salary-buti-base">••••</div>
-      <div class="salary-bonus">bônus <span id="salary-buti-bonus" style="color:#a8bc48">••••</span></div>
+      <div class="entrada-count" id="salary-buti-count"></div>
     </div>
     <div class="salary-card salary-bita">
       <div class="salary-title" style="display:flex;align-items:center;justify-content:space-between">
@@ -611,7 +638,7 @@ body {
         </button>
       </div>
       <div class="salary-amount" id="salary-bita-base">••••</div>
-      <div class="salary-bonus">bônus <span id="salary-bita-bonus" style="color:#c084fc">••••</span></div>
+      <div class="entrada-count" id="salary-bita-count"></div>
     </div>
   </div>
   <div class="salary-total-bar">
@@ -734,21 +761,26 @@ body {
 
   <!-- Sub-aba: Salários -->
   <div id="subtab-salario" class="subtab">
-    <div class="salary-edit-block buti-block">
-      <div class="salary-edit-title" style="color:#a8bc48">Buti</div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Salário base (R$)</label><input class="form-input" type="number" id="sal-buti-base" placeholder="0,00" min="0" step="0.01"></div>
-        <div class="form-group"><label class="form-label">Bônus mensal (R$)</label><input class="form-input" type="number" id="sal-buti-bonus" placeholder="0,00" min="0" step="0.01"></div>
+    <!-- Entradas do Buti -->
+    <div class="entradas-block">
+      <div class="entradas-title" style="color:#a8bc48">💼 Buti — Entradas do mês</div>
+      <div id="entradas-buti-list"></div>
+      <button class="btn-add-entrada" onclick="abrirModalEntrada('buti')">+ Adicionar entrada</button>
+      <div class="entradas-total">
+        <span>Total recebido</span>
+        <span class="entradas-total-val" id="entradas-buti-total">R$ 0</span>
       </div>
     </div>
-    <div class="salary-edit-block bita-block">
-      <div class="salary-edit-title" style="color:#c084fc">Bita</div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Salário base (R$)</label><input class="form-input" type="number" id="sal-bita-base" placeholder="0,00" min="0" step="0.01"></div>
-        <div class="form-group"><label class="form-label">Bônus mensal (R$)</label><input class="form-input" type="number" id="sal-bita-bonus" placeholder="0,00" min="0" step="0.01"></div>
+    <!-- Entradas da Bita -->
+    <div class="entradas-block">
+      <div class="entradas-title" style="color:#c084fc">💼 Bita — Entradas do mês</div>
+      <div id="entradas-bita-list"></div>
+      <button class="btn-add-entrada" onclick="abrirModalEntrada('bita')">+ Adicionar entrada</button>
+      <div class="entradas-total">
+        <span>Total recebido</span>
+        <span class="entradas-total-val" id="entradas-bita-total">R$ 0</span>
       </div>
     </div>
-    <button class="btn-form" onclick="salvarSalarios()">Salvar salários</button>
   </div>
 
   <!-- Sub-aba: Importar -->
@@ -779,9 +811,9 @@ body {
 <div class="section" id="section-config">
   <button class="btn-secondary" onclick="reloadData()" style="margin-bottom:16px">🔄 Sincronizar agora</button>
   <div class="sec-title">Notificações</div>
-  <div class="notif-row"><div><div class="notif-title">🔔 Push notifications</div><div class="notif-sub">Alertas direto no celular</div></div><div class="toggle-switch" id="toggle-notif" onclick="toggleSwitch('toggle-notif',true)"></div></div>
-  <div class="notif-row"><div><div class="notif-title">⚡ Aviso 3 dias antes</div><div class="notif-sub">Alerta antecipado de vencimento</div></div><div class="toggle-switch on" id="toggle-early" onclick="toggleSwitch('toggle-early',false)"></div></div>
-  <div class="notif-row"><div><div class="notif-title">🚨 Alerta no dia do vencimento</div><div class="notif-sub">Lembrete às 8h na data de pagar</div></div><div class="toggle-switch on" id="toggle-dia" onclick="toggleSwitch('toggle-dia',false)"></div></div>
+  <div class="notif-row"><div><div class="notif-title">🔔 Push notifications</div><div class="notif-sub">Receba alertas no celular mesmo com o app fechado</div></div><div class="toggle-switch" id="toggle-notif" onclick="toggleSwitch('toggle-notif',true)"></div></div>
+  <div class="notif-row"><div><div class="notif-title">⚡ Aviso 3 dias antes</div><div class="notif-sub">Push às 8h quando faltar 3 dias para o vencimento</div></div><div class="toggle-switch on" id="toggle-early" onclick="toggleSwitch('toggle-early',false)"></div></div>
+  <div class="notif-row"><div><div class="notif-title">🚨 Alerta no dia do vencimento</div><div class="notif-sub">Push às 8h e ao meio-dia na data de pagar</div></div><div class="toggle-switch on" id="toggle-dia" onclick="toggleSwitch('toggle-dia',false)"></div></div>
   <div class="divider"></div>
   <div class="sec-title" style="color:var(--red)">Zona de perigo</div>
   <button class="btn-danger" onclick="fecharMes()">🗂 Fechar mês atual e iniciar novo</button>
@@ -797,6 +829,32 @@ body {
     <div class="modal-body" id="modal-body"></div>
   </div>
 </div>
+<!-- MODAL NOVA ENTRADA -->
+<div class="modal-overlay hidden" id="modal-entrada">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="modal-entrada-title">Nova entrada</div>
+      <button class="modal-close" onclick="fecharModalEntrada()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <input class="form-input" type="text" id="entrada-desc" placeholder="Ex: Adiantamento, Salário, Bônus..." maxlength="60">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input class="form-input" type="number" id="entrada-valor" placeholder="0,00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data de recebimento</label>
+        <input class="form-input" type="date" id="entrada-data">
+      </div>
+      <button class="btn-form" onclick="salvarEntrada()">Salvar entrada</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL DE CONFIRMAÇÃO -->
 <div class="modal-overlay hidden" id="confirm-overlay">
   <div class="modal" style="max-height:auto">
@@ -828,7 +886,107 @@ const VARIAVEIS_EST=3460, ASSINATURAS_EST=265;
 const hoje=new Date(), MES_ATUAL=hoje.getMonth()+1, ANO_ATUAL=hoje.getFullYear(), DIA_HOJE=hoje.getDate();
 let PESSOA_ATIVA=localStorage.getItem('pessoa')||'Buti';
 let contasDB=[], pagamentosDB=[], avulsosDB=[], csvPendente=[];
-let salarios = {buti:{base:12000,bonus:1000},bita:{base:0,bonus:0}};
+// ===== ENTRADAS DO MÊS (substitui modelo fixo base+bonus) =====
+// Estrutura: { buti: [{id, desc, valor, data}], bita: [...] }
+// Chave no Supabase: "entradas_YYYY_MM" (por mês, preserva histórico)
+let entradas = { buti: [], bita: [] };
+let _entradaEditando = null; // { pessoa, id } quando editando
+let _entradaPessoa = 'buti';  // pessoa ativa no modal
+
+function chaveEntradas() {
+  return `entradas_${ANO_ATUAL}_${String(MES_ATUAL).padStart(2,'0')}`;
+}
+
+function totalEntradas(pessoa) {
+  return entradas[pessoa].reduce((s, e) => s + Number(e.valor||0), 0);
+}
+
+function renderEntradasTab() {
+  ['buti','bita'].forEach(p => {
+    const list = document.getElementById(`entradas-${p}-list`);
+    const total = document.getElementById(`entradas-${p}-total`);
+    if(!list) return;
+    if(entradas[p].length === 0) {
+      list.innerHTML = '<div style="font-size:12px;color:var(--text2);margin-bottom:8px;text-align:center">Nenhuma entrada registrada</div>';
+    } else {
+      list.innerHTML = entradas[p].map(e => `
+        <div class="entrada-row">
+          <div class="entrada-info">
+            <div class="entrada-desc">${escHtml(e.desc||'Entrada')}</div>
+            <div class="entrada-meta">${e.data||''}</div>
+          </div>
+          <div class="entrada-valor">${fmtR(e.valor)}</div>
+          <button class="del-btn" onclick="removerEntrada('${p}','${e.id}')" title="Remover">🗑</button>
+        </div>`).join('');
+    }
+    if(total) total.textContent = fmtR(totalEntradas(p));
+  });
+}
+
+function abrirModalEntrada(pessoa) {
+  _entradaPessoa = pessoa;
+  _entradaEditando = null;
+  const cor = pessoa==='buti' ? '#a8bc48' : '#c084fc';
+  document.getElementById('modal-entrada-title').textContent = `Nova entrada — ${pessoa==='buti'?'Buti':'Bita'}`;
+  document.getElementById('modal-entrada-title').style.color = cor;
+  document.getElementById('entrada-desc').value = '';
+  document.getElementById('entrada-valor').value = '';
+  document.getElementById('entrada-data').value = hoje.toISOString().split('T')[0];
+  document.getElementById('modal-entrada').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('entrada-desc').focus(), 100);
+}
+
+function fecharModalEntrada() {
+  document.getElementById('modal-entrada').classList.add('hidden');
+}
+
+async function salvarEntrada() {
+  const desc  = document.getElementById('entrada-desc').value.trim();
+  const valor = parseFloat(document.getElementById('entrada-valor').value) || 0;
+  const data  = document.getElementById('entrada-data').value;
+  if (!desc)  { showToast('Informe uma descrição'); return; }
+  if (valor <= 0) { showToast('Informe um valor maior que zero'); return; }
+
+  const dataFmt = data ? new Date(data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '';
+  const nova = { id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), desc, valor, data: dataFmt };
+  entradas[_entradaPessoa] = [...entradas[_entradaPessoa], nova];
+
+  setSyncStatus('syncing','salvando...');
+  try {
+    await sbSetConfig(chaveEntradas(), entradas);
+    setSyncStatus('online','sincronizado');
+    fecharModalEntrada();
+    renderEntradasTab();
+    renderDashboard();
+    showToast(`Entrada de ${fmtR(valor)} registrada ✓`);
+  } catch(e) {
+    entradas[_entradaPessoa] = entradas[_entradaPessoa].filter(x=>x.id!==nova.id);
+    setSyncStatus('offline','erro');
+    showToast('Erro ao salvar');
+  }
+}
+
+async function removerEntrada(pessoa, id) {
+  const entrada = entradas[pessoa].find(e=>e.id===id);
+  if (!entrada) return;
+  showConfirm(`Remover "${escHtml(entrada.desc)}" (${fmtR(entrada.valor)})?`, async () => {
+    entradas[pessoa] = entradas[pessoa].filter(e=>e.id!==id);
+    setSyncStatus('syncing','salvando...');
+    try {
+      await sbSetConfig(chaveEntradas(), entradas);
+      setSyncStatus('online','sincronizado');
+      renderEntradasTab();
+      renderDashboard();
+      showToast('Entrada removida');
+    } catch(e) {
+      setSyncStatus('offline','erro');
+      showToast('Erro ao remover');
+    }
+  });
+}
+
+// Legado: mantém compatibilidade com dados antigos (base+bonus)
+let salarios = {buti:{base:0,bonus:0},bita:{base:0,bonus:0}};
 let _configCache = {};
 
 // ===== AUTH =====
@@ -1083,17 +1241,19 @@ function toggleSalario(who) {
   const btn  = document.getElementById('eye-' + who);
   if (btn) btn.innerHTML = show ? SVG_EYE_OFF : SVG_EYE;
   if (who === 'buti') {
-    const base  = document.getElementById('salary-buti-base');
-    const bonus = document.getElementById('salary-buti-bonus');
-    base.textContent  = show ? fmtR(salarios.buti.base)  : '••••';
-    bonus.textContent = show ? fmtR(salarios.buti.bonus) : '••••';
+    const tot = totalEntradas('buti');
+    const el = document.getElementById('salary-buti-base');
+    el.textContent = show ? (tot > 0 ? fmtR(tot) : '—') : '••••';
+    const cnt = document.getElementById('salary-buti-count');
+    if(cnt) cnt.textContent = show && entradas.buti.length > 0 ? `${entradas.buti.length} entrada${entradas.buti.length>1?'s':''}` : '';
   } else if (who === 'bita') {
-    const base  = document.getElementById('salary-bita-base');
-    const bonus = document.getElementById('salary-bita-bonus');
-    base.textContent  = show ? (salarios.bita.base > 0  ? fmtR(salarios.bita.base)  : '—') : '••••';
-    bonus.textContent = show ? (salarios.bita.bonus > 0 ? fmtR(salarios.bita.bonus) : '—') : '••••';
+    const tot = totalEntradas('bita');
+    const el = document.getElementById('salary-bita-base');
+    el.textContent = show ? (tot > 0 ? fmtR(tot) : '—') : '••••';
+    const cnt = document.getElementById('salary-bita-count');
+    if(cnt) cnt.textContent = show && entradas.bita.length > 0 ? `${entradas.bita.length} entrada${entradas.bita.length>1?'s':''}` : '';
   } else if (who === 'total') {
-    const tot = salarios.buti.base + salarios.buti.bonus + salarios.bita.base + salarios.bita.bonus;
+    const tot = totalEntradas('buti') + totalEntradas('bita');
     document.getElementById('salary-total').textContent = show ? fmtR(tot) : '••••';
   }
 }
@@ -1103,34 +1263,13 @@ function showSubTab(id){
   document.querySelectorAll('.sub-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('subtab-'+id).classList.add('active');
   document.getElementById('subbtn-'+id).classList.add('active');
-  // Limpa campos de salário sempre que a sub-aba for aberta
+  // Sub-aba salário: renderiza lista de entradas ao abrir
   if(id==='salario'){
-    ['sal-buti-base','sal-buti-bonus','sal-bita-base','sal-bita-bonus'].forEach(f=>{
-      document.getElementById(f).value='';
-    });
+    renderEntradasTab();
   }
 }
 
 // ===== SALÁRIOS =====
-async function salvarSalarios(){
-  const bb=parseFloat(document.getElementById('sal-buti-base').value)||0;
-  const bbo=parseFloat(document.getElementById('sal-buti-bonus').value)||0;
-  const ib=parseFloat(document.getElementById('sal-bita-base').value)||0;
-  const ibo=parseFloat(document.getElementById('sal-bita-bonus').value)||0;
-  salarios={buti:{base:bb,bonus:bbo},bita:{base:ib,bonus:ibo}};
-  setSyncStatus('syncing','salvando...');
-  try{
-    await sbSetConfig('salarios', salarios);
-    setSyncStatus('online','sincronizado');
-    renderDashboard();
-    showToast('Salários atualizados ✓');
-  }catch(e){
-    // fallback: salvar local se Supabase falhar
-    try{localStorage.setItem('salarios_bak',JSON.stringify(salarios));}catch(_){}
-    setSyncStatus('offline','erro ao salvar');
-    showToast('Salvo localmente — sem conexão');
-  }
-}
 
 // ===== TEMA =====
 let temaAtual = localStorage.getItem('tema') || 'olive';
@@ -1202,29 +1341,33 @@ async function loadData(){
   pagamentosDB=await sbGet('pagamentos',`mes=eq.${MES_ATUAL}&ano=eq.${ANO_ATUAL}`);
   avulsosDB=await sbGet('gastos_avulsos',`mes=eq.${MES_ATUAL}&ano=eq.${ANO_ATUAL}&order=created_at.desc`);
 
-  // Carregar salários do Supabase (compartilhado entre Buti e Bita)
-  const salDb=await sbGetConfig('salarios');
-  if(salDb) salarios=salDb;
-  else{
-    // fallback: tentar localStorage legado ou backup
-    try{
-      const legacy=localStorage.getItem('salarios')||localStorage.getItem('salarios_bak');
-      if(legacy){ salarios=JSON.parse(legacy); await sbSetConfig('salarios',salarios); }
-    }catch(_){}
+  // Carregar entradas do mês (novo modelo — múltiplas entradas por pessoa)
+  const entradasDb = await sbGetConfig(chaveEntradas());
+  if (entradasDb && (entradasDb.buti || entradasDb.bita)) {
+    entradas = { buti: entradasDb.buti||[], bita: entradasDb.bita||[] };
+  } else {
+    // Fallback: migrar dados legados de salarios para entradas
+    const salDb = await sbGetConfig('salarios');
+    if (salDb) {
+      salarios = salDb;
+      // Converte base+bonus em entradas se ainda não migrou
+      if (salDb.buti?.base > 0) entradas.buti = [{id:'leg_buti_base', desc:'Salário base', valor:salDb.buti.base, data:''}, ...(salDb.buti.bonus>0?[{id:'leg_buti_bonus', desc:'Bônus', valor:salDb.buti.bonus, data:''}]:[])];
+      if (salDb.bita?.base > 0) entradas.bita = [{id:'leg_bita_base', desc:'Salário base', valor:salDb.bita.base, data:''}, ...(salDb.bita.bonus>0?[{id:'leg_bita_bonus', desc:'Bônus', valor:salDb.bita.bonus, data:''}]:[])];
+    }
   }
 
   // Carregar variáveis do Supabase (compartilhado)
   const varDb=await sbGetConfig('variaveis');
   if(varDb) variaveisBase=varDb;
   else{
-    // fallback: tentar localStorage legado
     try{
       const legacy=localStorage.getItem('variaveis');
       if(legacy){ variaveisBase=JSON.parse(legacy); await sbSetConfig('variaveis',variaveisBase); }
     }catch(_){}
   }
 
-  // Campos de salário ficam limpos — são preenchidos apenas quando o usuário abre a sub-aba
+  // Renderiza lista de entradas na sub-aba (sem esperar o usuário abrir)
+  renderEntradasTab();
 }
 async function sincronizarPagamentosMes(){
   const ids=new Set(pagamentosDB.map(p=>p.conta_id));
@@ -1319,12 +1462,19 @@ function renderAll(){renderDashboard();renderContas();renderGastos();}
 
 function renderDashboard(){
   // Salary cards — respeita estado de visibilidade individual
-  const totalSalario = salarios.buti.base + salarios.buti.bonus + salarios.bita.base + salarios.bita.bonus;
-  document.getElementById('salary-buti-base').textContent  = _salVisible.buti  ? fmtR(salarios.buti.base)  : '••••';
-  document.getElementById('salary-buti-bonus').textContent = _salVisible.buti  ? fmtR(salarios.buti.bonus) : '••••';
-  document.getElementById('salary-bita-base').textContent  = _salVisible.bita  ? (salarios.bita.base > 0  ? fmtR(salarios.bita.base)  : '—') : '••••';
-  document.getElementById('salary-bita-bonus').textContent = _salVisible.bita  ? (salarios.bita.bonus > 0 ? fmtR(salarios.bita.bonus) : '—') : '••••';
-  document.getElementById('salary-total').textContent      = _salVisible.total ? fmtR(totalSalario) : '••••';
+  const totalButi   = totalEntradas('buti');
+  const totalBita   = totalEntradas('bita');
+  const totalSalario = totalButi + totalBita;
+  // Cards de salário — respeita estado de visibilidade individual
+  const elBB = document.getElementById('salary-buti-base');
+  const elBtB = document.getElementById('salary-bita-base');
+  if(elBB) elBB.textContent = _salVisible.buti ? (totalButi>0?fmtR(totalButi):'—') : '••••';
+  if(elBtB) elBtB.textContent = _salVisible.bita ? (totalBita>0?fmtR(totalBita):'—') : '••••';
+  const cntB = document.getElementById('salary-buti-count');
+  const cntBt = document.getElementById('salary-bita-count');
+  if(cntB) cntB.textContent = _salVisible.buti && entradas.buti.length>0 ? `${entradas.buti.length} entrada${entradas.buti.length>1?'s':''}` : '';
+  if(cntBt) cntBt.textContent = _salVisible.bita && entradas.bita.length>0 ? `${entradas.bita.length} entrada${entradas.bita.length>1?'s':''}` : '';
+  document.getElementById('salary-total').textContent = _salVisible.total ? fmtR(totalSalario) : '••••';
 
   const manuais=contasDB.filter(c=>c.dia>0&&c.cat!=='assinatura');
   const sorted=[...manuais].sort((a,b)=>{const da=a.dia>=DIA_HOJE?a.dia-DIA_HOJE:31+a.dia-DIA_HOJE,db=b.dia>=DIA_HOJE?b.dia-DIA_HOJE:31+b.dia-DIA_HOJE;return da-db;});
@@ -1680,29 +1830,99 @@ function showSection(id,btn){
   if(id==='historico')renderHistorico();
 }
 function goAlerts(){showSection('dashboard',null);}
+// ===== PUSH NOTIFICATIONS REAIS (Web Push API) =====
+// A publicKey VAPID é pública por design — fica no frontend sem problema
+const VAPID_PUBLIC_KEY = 'BOD5s2bqEehGCP6HlP3K6gGDz-gvH04UzCIE1YBA03Jw504NO95hgFFQZ7OaZOf85wlxdyKsw9w9BV3vgMkkuow';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+async function registrarPushSubscription() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    showToast('Push notifications não suportadas neste browser');
+    return false;
+  }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    // Verificar se já tem subscription ativa
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    const subJson = sub.toJSON();
+    // Salvar subscription no Supabase (autenticado com JWT do usuário)
+    await fetch(`${SB_URL}/rest/v1/push_subscriptions`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeader(),
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({
+        user_id: _authUser?.id,
+        email: _authUser?.email || '',
+        endpoint: subJson.endpoint,
+        p256dh: subJson.keys?.p256dh || '',
+        auth: subJson.keys?.auth || ''
+      })
+    });
+    return true;
+  } catch (e) {
+    console.warn('Erro ao registrar push:', e);
+    return false;
+  }
+}
+
+async function cancelarPushSubscription() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      const endpoint = sub.endpoint;
+      await sub.unsubscribe();
+      // Remover do banco
+      await fetch(`${SB_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(endpoint)}`, {
+        method: 'DELETE',
+        headers: getAuthHeader()
+      });
+    }
+  } catch (e) { console.warn('Erro ao cancelar push:', e); }
+}
+
 function toggleSwitch(id, notif) {
   const el = document.getElementById(id);
   const wasOn = el.classList.contains('on');
   if (!wasOn && notif && 'Notification' in window) {
-    Notification.requestPermission().then(p => {
+    Notification.requestPermission().then(async p => {
       if (p === 'granted') {
         el.classList.add('on');
         localStorage.setItem('notif_enabled', '1');
-        agendarAlertasLocais();
-        showToast('Notificações ativadas ✓');
+        setSyncStatus('syncing', 'ativando notificações...');
+        const ok = await registrarPushSubscription();
+        setSyncStatus('online', 'sincronizado');
+        showToast(ok ? 'Notificações push ativadas ✓' : 'Permissão concedida — push não suportado neste browser');
       } else {
         showToast('Permissão negada — verifique as configurações do navegador');
       }
     });
   } else {
+    const novoEstado = !wasOn;
     el.classList.toggle('on');
     if (id === 'toggle-notif') {
-      localStorage.setItem('notif_enabled', el.classList.contains('on') ? '1' : '0');
+      localStorage.setItem('notif_enabled', novoEstado ? '1' : '0');
+      if (!novoEstado) cancelarPushSubscription();
     }
   }
 }
 
-// Agenda notificações locais para contas próximas do vencimento
+// agendarAlertasLocais mantida para fallback quando app está aberto
 function agendarAlertasLocais() {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   if (!contasDB || contasDB.length === 0) return;
@@ -1723,7 +1943,7 @@ function agendarAlertasLocais() {
     new Notification('Buti&Bita Financials', {
       body: msg,
       icon: './icon-192.png',
-      tag: `conta-${c.id}`,  // evita duplicatas
+      tag: `conta-${c.id}`,
       requireInteraction: diff === 0
     });
   });
@@ -1773,20 +1993,20 @@ if('serviceWorker' in navigator){
   });
 }
 
-// Polling 30s — sincroniza pagamentos, avulsos, salários e variáveis
+// Polling 30s — sincroniza pagamentos, avulsos, entradas e variáveis
 setInterval(async()=>{
   if(!_authToken) return;
   try{
     const n=await sbGet('pagamentos',`mes=eq.${MES_ATUAL}&ano=eq.${ANO_ATUAL}`);
     const av=await sbGet('gastos_avulsos',`mes=eq.${MES_ATUAL}&ano=eq.${ANO_ATUAL}&order=created_at.desc`);
-    const salDb=await sbGetConfig('salarios');
+    const entradasDb=await sbGetConfig(chaveEntradas());
     const varDb=await sbGetConfig('variaveis');
-    const salChanged = salDb && JSON.stringify(salDb)!==JSON.stringify(salarios);
+    const entradasChanged = entradasDb && JSON.stringify(entradasDb)!==JSON.stringify(entradas);
     const varChanged = varDb && JSON.stringify(varDb)!==JSON.stringify(variaveisBase);
     const pagChanged = JSON.stringify(n)!==JSON.stringify(pagamentosDB);
-    if(pagChanged||salChanged||varChanged){
+    if(pagChanged||entradasChanged||varChanged){
       pagamentosDB=n; avulsosDB=av;
-      if(salChanged){ salarios=salDb; }
+      if(entradasChanged){ entradas=entradasDb; renderEntradasTab(); }
       if(varChanged) variaveisBase=varDb;
       renderAll(); setSyncStatus('online','atualizado');
     }

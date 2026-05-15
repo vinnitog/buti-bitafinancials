@@ -1734,10 +1734,10 @@ async function salvarEdicaoAvulso(id){
   if(!desc){showToast('Informe a descrição');return;}
   setSyncStatus('syncing','salvando...');
   try{
-    await sbPatch('gastos_avulsos',id,{descricao:desc,valor,data_gasto:data,categoria:cat});
-    // Atualiza local
+    // [FIX] registrado_por atualizado com quem editou por último
+    await sbPatch('gastos_avulsos',id,{descricao:desc,valor,data_gasto:data,categoria:cat,registrado_por:PESSOA_ATIVA});
     const idx=avulsosDB.findIndex(x=>x.id===id);
-    if(idx>-1) avulsosDB[idx]={...avulsosDB[idx],descricao:desc,valor,data_gasto:data,categoria:cat};
+    if(idx>-1) avulsosDB[idx]={...avulsosDB[idx],descricao:desc,valor,data_gasto:data,categoria:cat,registrado_por:PESSOA_ATIVA};
     setSyncStatus('online','sincronizado');
     closeModal();renderGastos();showToast('Gasto atualizado ✓');
   }catch(e){setSyncStatus('offline','erro');showToast('Erro: '+e.message);}

@@ -72,19 +72,22 @@ self.addEventListener('fetch', event => {
 
 // Push — notificação recebida do servidor
 self.addEventListener('push', event => {
-  let data = { title: 'Buti&Bita Financials', body: 'Verifique seus vencimentos!', tag: 'buti-bita', requireInteraction: false };
+  let data = { title: 'Buti&Bita', body: 'Verifique seus vencimentos!', tag: 'buti-bita', requireInteraction: false };
   if (event.data) {
     try { Object.assign(data, event.data.json()); } catch { data.body = event.data.text(); }
   }
+  // URLs absolutas — necessário para push em background
+  const icon  = data.icon  || 'https://vinnitog.github.io/buti-bitafinancials/icon-192.png';
+  const badge = data.badge || 'https://vinnitog.github.io/buti-bitafinancials/icon-32.png';
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: './icon-192.png',
-      badge: './icon-32.png',
+      icon,
+      badge,
       tag: data.tag || 'buti-bita',
       requireInteraction: data.requireInteraction || false,
       vibrate: [200, 100, 200],
-      data: { url: './' }
+      data: { url: 'https://vinnitog.github.io/buti-bitafinancials/' }
     })
   );
 });

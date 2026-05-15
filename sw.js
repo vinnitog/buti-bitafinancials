@@ -6,7 +6,7 @@
  * sem precisar reinstalar o PWA ou atualizar versão manualmente.
  */
 
-const CACHE_NAME = 'buti-bita-v1';
+const CACHE_NAME = 'buti-bita-v2';
 
 // Install — não pré-cacheia nada (evita travar em versão antiga)
 self.addEventListener('install', event => {

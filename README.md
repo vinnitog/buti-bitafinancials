@@ -17,7 +17,7 @@ PWA de controle financeiro pessoal com sincronização em tempo real.
 - Histórico mensal com extrato completo
 - Sincronização em tempo real entre dispositivos via banco de dados na nuvem
 - Login individual com tema e perfil automático por usuário
-- **Push notifications reais** — alertas às 8h (3 dias antes) e às 8h + 12h (no dia do vencimento), mesmo com o app fechado
+- **Push notifications reais** — alertas às 8h (3 dias antes) e às 8h + 12h (no dia do vencimento), mesmo com o app fechado, com ícone do app
 
 ---
 
@@ -27,7 +27,7 @@ PWA de controle financeiro pessoal com sincronização em tempo real.
 |--------|-----------|
 | Frontend | HTML5 + CSS3 + JavaScript vanilla |
 | Banco de dados | Supabase (PostgreSQL) |
-| Push notifications | Web Push API + VAPID + Supabase Edge Functions + pg_cron |
+| Push notifications | Web Push API + VAPID + `web-push` + Supabase Edge Functions + pg_cron |
 | Fonte | Geist (Google Fonts) |
 | PWA | Service Worker (`sw.js`) |
 | Testes unitários | Node.js `node:test` |
@@ -40,13 +40,13 @@ PWA de controle financeiro pessoal com sincronização em tempo real.
 ```
 .
 ├── index.html                          # App completo
-├── sw.js                               # Service Worker
+├── sw.js                               # Service Worker (push + cache)
 ├── README.md
 ├── package.json
 ├── supabase/
 │   └── functions/
 │       └── send-push/
-│           └── index.ts               # Edge Function de push notifications
+│           └── index.ts               # Edge Function — envia push notifications
 ├── unit/
 │   ├── helpers.test.js
 │   └── supabase.test.js
@@ -69,6 +69,8 @@ O banner de instalação só aparece quando o app é acessado via **HTTPS**.
 
 O app aparece na tela inicial como **Buti&Bita**.
 
+> Push notifications no iPhone só funcionam via Safari + app instalado como PWA. Chrome no iPhone não suporta Web Push.
+
 ---
 
 ## Push Notifications
@@ -79,14 +81,15 @@ O app aparece na tela inicial como **Buti&Bita**.
 pg_cron (8h / 12h BRT)
   → Edge Function send-push
     → consulta contas + pagamentos no Supabase
-    → identifica vencimentos não pagos
-    → Web Push API → celular de Buti / Bita
+    → filtra vencimentos não pagos
+    → web-push → FCM → celular de Buti / Bita
 ```
 
-- **Aviso 3 dias antes** — push às 8h quando faltar exatamente 3 dias para o vencimento
-- **Alerta no dia** — push às 8h e ao meio-dia na data de vencer
+- **3 dias antes** — push às 8h quando faltar exatamente 3 dias
+- **No dia** — push às 8h e ao meio-dia na data de vencer
+- Contas já pagas são ignoradas automaticamente
 
-### Configuração (uma vez)
+### Configuração inicial (uma vez)
 
 **1. Criar tabela no Supabase** (SQL Editor):
 
@@ -106,29 +109,35 @@ CREATE POLICY "usuario_propria_subscription" ON push_subscriptions
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 ```
 
-**2. Configurar secrets na Edge Function** (Supabase → Settings → Edge Functions → Secrets):
+**2. Secrets** (Supabase → Settings → Edge Functions → Secrets):
 
 ```
-VAPID_PUBLIC_KEY   = BOD5s2bqEehGCP6HlP3K6gGDz-...
-VAPID_PRIVATE_KEY  = Db1KzlZPkVnJGmYQKJ1646hL...
-VAPID_SUBJECT      = mailto:seu@email.com
+VAPID_PUBLIC_KEY  → sua chave pública VAPID
+VAPID_PRIVATE_KEY → sua chave privada VAPID
+VAPID_SUBJECT     → mailto:seu@email.com
 ```
+
+> Para gerar novas VAPID keys: `npx web-push generate-vapid-keys`
 
 **3. Deploy da Edge Function:**
 
 ```bash
+supabase login
+supabase init
+supabase functions new send-push   # cria a pasta
+# substitua o index.ts gerado pelo nosso arquivo
 supabase functions deploy send-push --no-verify-jwt
 ```
 
-**4. Agendar com pg_cron** (SQL Editor — substitua `SERVICE_ROLE_KEY`):
+**4. Agendar com pg_cron** (SQL Editor — substitua `SERVICE_ROLE_KEY` e `SEU_PROJETO`):
 
 ```sql
-SELECT cron.schedule('push-3dias', '0 11 * * *',
+SELECT cron.schedule('push-3dias',    '0 11 * * *',
   $$SELECT net.http_post(url:='https://SEU_PROJETO.supabase.co/functions/v1/send-push',
     headers:='{"Content-Type":"application/json","Authorization":"Bearer SERVICE_ROLE_KEY"}'::jsonb,
     body:='{"tipo":"3dias"}'::jsonb)$$);
 
-SELECT cron.schedule('push-hoje-8h', '0 11 * * *',
+SELECT cron.schedule('push-hoje-8h',  '0 11 * * *',
   $$SELECT net.http_post(url:='https://SEU_PROJETO.supabase.co/functions/v1/send-push',
     headers:='{"Content-Type":"application/json","Authorization":"Bearer SERVICE_ROLE_KEY"}'::jsonb,
     body:='{"tipo":"hoje_8h"}'::jsonb)$$);
@@ -139,22 +148,34 @@ SELECT cron.schedule('push-hoje-12h', '0 15 * * *',
     body:='{"tipo":"hoje_12h"}'::jsonb)$$);
 ```
 
-**5. Ativar no app:** Configuração → Push notifications → ativar toggle → aceitar permissão
+**5. Ativar no celular:**
+1. Abra o app **pela tela inicial** (PWA instalado, não pelo browser)
+2. Configuração → Push notifications → ativar toggle
+3. Aceite a permissão quando o Android perguntar
+4. Confirme que apareceu uma linha em Supabase → Table Editor → `push_subscriptions`
+
+### Testar manualmente
+
+No Supabase → Edge Functions → send-push → **Invoke**, envie:
+
+```json
+{ "tipo": "test" }
+```
+
+Retorno esperado: `{ "ok": true, "enviados": 1, "contas": N }`
+
+Se retornar `"sem subscriptions"` → ative o toggle no app primeiro.
+Se retornar `"nenhuma conta para notificar"` → crie uma conta com vencimento nos próximos 7 dias.
+
+### Manutenção
+
+Se a notificação parar de chegar, verifique em Supabase → Edge Functions → send-push → **Logs**. Subscrições expiradas são removidas automaticamente pela Edge Function.
 
 ---
 
 ## Entradas de renda
 
-Na aba **+ Novo → Entradas do mês** registre múltiplas entradas (adiantamento, salário, bônus) para Buti e Bita. O painel soma tudo automaticamente.
-
----
-
-## Notificações
-
-Para ativar push notifications reais (funciona com app fechado):
-1. Acesse via HTTPS (GitHub Pages)
-2. **Configuração → Push notifications → ativar toggle**
-3. Aceite a permissão no browser
+Na aba **+ Novo → Entradas do mês** registre múltiplas entradas (adiantamento, salário, bônus variável) para Buti e Bita ao longo do mês. O painel soma tudo e exibe o total por pessoa e do casal. Os dados ficam separados por mês.
 
 ---
 
@@ -205,3 +226,14 @@ python e2e/playwright_features_tests.py
 ---
 
 *Buti & Bita 💚💜*
+
+---
+
+## Notas de versão recentes
+
+- Sincronização automática ao abrir o app (além do login)
+- Chips de Buti e Bita com cores fixas — verde e roxo independente do tema
+- Fechar mês prepara automaticamente os registros do mês seguinte
+- Botão "↩ Reabrir" em cada card do histórico
+- Edição de gastos avulsos com campo de emoji/ícone
+- Seção de despesas variáveis mensais removida — use gastos avulsos

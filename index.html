@@ -287,8 +287,17 @@ body {
   border-radius:var(--radius); padding:14px; margin-bottom:8px; cursor:pointer; transition:border-color 0.15s;
 }
 .mes-card:hover { border-color:var(--border2); }
-.mes-card-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.mes-card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
 .mes-nome { font-size:14px; font-weight:700; }
+.mes-card-badges { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+.btn-reabrir {
+  font-size:10px; padding:2px 7px; border-radius:6px; margin-top:0;
+  background:none; border:1px solid var(--border2); color:var(--text2);
+  cursor:pointer; font-family:inherit; transition:all 0.15s; white-space:nowrap;
+}
+.btn-reabrir:not(:disabled):hover { border-color:var(--accent); color:var(--accent); }
+.btn-reabrir:disabled { opacity:0.3; cursor:not-allowed; }
+.chip-fechado { background:rgba(100,100,100,0.15); color:var(--text2); font-size:10px; padding:1px 6px; border-radius:8px; font-weight:600; }
 .mes-stats { display:flex; gap:12px; font-size:11px; }
 .mes-stat { display:flex; flex-direction:column; align-items:center; gap:2px; }
 .mes-stat-val { font-weight:700; font-size:13px; }
@@ -414,6 +423,8 @@ body {
 .empty-icon { font-size:32px; margin-bottom:8px; }
 .chip { display:inline-block; font-size:10px; font-weight:600; padding:2px 8px; border-radius:10px; margin-left:4px; }
 .chip-accent { background:var(--chip-bg); color:var(--chip-color); }
+.chip-buti { background:rgba(168,188,72,0.15); color:#a8bc48 !important; border:1px solid rgba(168,188,72,0.3); }
+.chip-bita { background:rgba(192,132,252,0.15); color:#c084fc !important; border:1px solid rgba(192,132,252,0.3); }
 
 /* ===== LOGIN SCREEN ===== */
 .login-screen {
@@ -677,11 +688,9 @@ body {
 <!-- GASTOS -->
 <div class="section" id="section-gastos">
   <div class="summary-grid">
-    <div class="sum-card"><div class="sum-label">Gastos variáveis</div><div class="sum-value yellow" id="variaveis-total">≈ R$ 3.460</div><div class="sum-sub">estimativa mensal</div></div>
-    <div class="sum-card"><div class="sum-label">Total geral</div><div class="sum-value red" id="fixos-total">—</div><div class="sum-sub">fixos + variáveis</div></div>
+    <div class="sum-card"><div class="sum-label">Total geral</div><div class="sum-value red" id="fixos-total">—</div><div class="sum-sub">contas + avulsos</div></div>
+    <div class="sum-card"><div class="sum-label">Gastos avulsos</div><div class="sum-value yellow" id="variaveis-total">—</div><div class="sum-sub">registrados no mês</div></div>
   </div>
-  <div class="sec-title">Despesas variáveis mensais</div>
-  <div id="list-variaveis"></div>
   <div class="sec-title">Gastos avulsos registrados <span class="sec-badge badge-gray" id="avulsos-mes-label"></span></div>
   <div id="list-avulsos"><div class="empty-state"><div class="empty-icon">📝</div>Nenhum gasto avulso registrado</div></div>
 </div>
@@ -1309,6 +1318,8 @@ async function startup() {
   const restaurou = await tentarRestaurarSessao();
   if (restaurou) {
     await entrarNoApp();
+    // Sincroniza dados frescos ao abrir o app (sessão restaurada)
+    try { await loadData(); renderAll(); setSyncStatus('online','sincronizado'); } catch(_) {}
   } else {
     mostrarLogin();
   }
@@ -1356,15 +1367,7 @@ async function loadData(){
     }
   }
 
-  // Carregar variáveis do Supabase (compartilhado)
-  const varDb=await sbGetConfig('variaveis');
-  if(varDb) variaveisBase=varDb;
-  else{
-    try{
-      const legacy=localStorage.getItem('variaveis');
-      if(legacy){ variaveisBase=JSON.parse(legacy); await sbSetConfig('variaveis',variaveisBase); }
-    }catch(_){}
-  }
+  // variaveisBase removida — seção substituída por gastos avulsos
 
   // Renderiza lista de entradas na sub-aba (sem esperar o usuário abrir)
   renderEntradasTab();
@@ -1435,9 +1438,12 @@ function makeCard(c,showToggle=true,panelMode=false){
   const amtColor=isPago?'var(--green)':'var(--text)';
   const autoTag=isAuto?'<span class="tag-auto">AUTO</span>':'';
   const _ppor=pag?.pago_por||'';
-  // Chip de pessoa: prioridade pago_por (se pago por alguém), senão criado_por (quem criou/editou)
   const _pessoa = (_ppor && _ppor!=='auto') ? _ppor : (c.criado_por||'');
-  const pagoPor = _pessoa ? `<span class="chip chip-accent">${escHtml(_pessoa)}</span>` : '';
+  // Chip com cor fixa por pessoa — independente do tema
+  const _chipCls = _pessoa.toLowerCase().includes('buta') ? 'chip-buta'
+    : _pessoa.toLowerCase()==='buti' ? 'chip-buti'
+    : _pessoa.toLowerCase()==='bita' ? 'chip-bita' : 'chip-accent';
+  const pagoPor = _pessoa ? `<span class="chip ${_chipCls}">${escHtml(_pessoa)}</span>` : '';
   const toggleBtn=(showToggle&&!isAuto)?`<button class="toggle-paid ${isPago?'checked':''}" onclick="togglePago(${c.id},event)">${isPago?'✓':''}</button>`:'';
   const editBtn=`<button class="edit-btn" onclick="editConta(${c.id})" title="Editar">✏️</button>`;
   const delBtn=!panelMode?`<button class="del-btn" onclick="deleteConta(${c.id})" title="Excluir conta">🗑</button>`:'';
@@ -1528,28 +1534,20 @@ function renderContas(){
 }
 
 function renderGastos(){
-  const totalVar=variaveisBase.reduce((a,v)=>a+v.valor,0);
-  document.getElementById('variaveis-total').textContent=`≈ ${fmtR(totalVar)}`;
-  document.getElementById('list-variaveis').innerHTML=variaveisBase.map((v,i)=>`
-    <div class="bill-card">
-      <div class="bill-icon" style="background:var(--yellow-bg)">${v.emoji}</div>
-      <div class="bill-info"><div class="bill-name">${escHtml(v.nome)}</div><div class="bill-due">${escHtml(v.freq)} • ${escHtml(v.obs)}</div></div>
-      <div class="bill-right">
-        <div class="bill-right-vals"><div class="bill-amount" style="color:var(--yellow)">${fmtR(v.valor)}</div><div class="bill-status status-pending">estimado</div></div>
-        <button class="edit-btn" onclick="editVariavel(${i})">✏️</button>
-      </div>
-    </div>`).join('');
+  // Despesas variáveis removidas — usar gastos avulsos
   document.getElementById('avulsos-mes-label').textContent=nomeMes(MES_ATUAL,ANO_ATUAL);
+  const _avTotal=avulsosDB.reduce((a,g)=>a+Number(g.valor),0);
+  const vt=document.getElementById('variaveis-total');if(vt)vt.textContent=fmtR(_avTotal);
   if(avulsosDB.length===0){document.getElementById('list-avulsos').innerHTML='<div class="empty-state"><div class="empty-icon">📝</div>Nenhum gasto avulso registrado</div>';}
   else{
     const ce={mercado:'🛒',combustivel:'⛽',alimentacao:'🍔',saude:'🏥',lazer:'🎮',outro:'💳'};
     document.getElementById('list-avulsos').innerHTML=avulsosDB.map(g=>`
       <div class="bill-card">
         <div class="bill-icon" style="background:var(--yellow-bg)">${ce[g.categoria]||'💳'}</div>
-        <div class="bill-info"><div class="bill-name">${escHtml(g.descricao)}${g.registrado_por?`<span class="chip chip-accent">${escHtml(g.registrado_por)}</span>`:''}</div><div class="bill-due">${escHtml(g.data_gasto||'')}</div></div>
+        <div class="bill-info"><div class="bill-name">${escHtml(g.descricao)}${g.registrado_por?`<span class="chip ${g.registrado_por.toLowerCase()==="buti"?"chip-buti":g.registrado_por.toLowerCase()==="bita"?"chip-bita":"chip-accent"}">${escHtml(g.registrado_por)}</span>`:""}</div><div class="bill-due">${escHtml(g.data_gasto||'')}</div></div>
         <div class="bill-right">
           <div class="bill-right-vals"><div class="bill-amount" style="color:var(--yellow)">${fmtR(g.valor)}</div></div>
-          <button class="edit-btn" onclick="deleteAvulso(${g.id})">🗑</button>
+          <div class="card-actions"><button class="edit-btn" onclick="editAvulso(${g.id})" title="Editar">✏️</button><button class="del-btn" onclick="deleteAvulso(${g.id})" title="Remover">🗑</button></div>
         </div>
       </div>`).join('');
   }
@@ -1564,6 +1562,8 @@ async function renderHistorico(){
     const avTodos=await sbGet('gastos_avulsos','order=ano.desc,mes.desc');
     const avMes={};
     avTodos.forEach(g=>{const k=`${g.ano}-${String(g.mes).padStart(2,'0')}`;if(!avMes[k])avMes[k]=[];avMes[k].push(g);});
+    // Carregar status de fechamento de todos os meses
+    await carregarStatusMeses();
     const keys=Object.keys(meses).sort().reverse();
     if(!keys.length){document.getElementById('historico-list').innerHTML='<div class="empty-state"><div class="empty-icon">📅</div>Nenhum histórico ainda</div>';return;}
     document.getElementById('historico-list').innerHTML=keys.map(k=>{
@@ -1573,8 +1573,20 @@ async function renderHistorico(){
       const vTot=md.pagamentos.reduce((a,p)=>a+Number(p.valor),0);
       const pct=tot>0?Math.round((pg/tot)*100):0;
       const avs=avMes[k]||[],vAv=avs.reduce((a,g)=>a+Number(g.valor),0);
+      const fechado = mesFechado(md.mes, md.ano);
+      const statusChip = isCur
+        ? `<span class="chip chip-accent">atual</span>${fechado?'<span class="chip-fechado" style="margin-left:4px">fechado</span>':''}`
+        : fechado ? '<span class="chip-fechado">fechado</span>' : '';
+      const reabrirDisabled = !fechado ? 'disabled' : '';
+      const reabrirTitle = !fechado ? 'Feche o mês primeiro para poder reabrir' : `Reabrir ${nomeMes(md.mes,md.ano)}`;
       return `<div class="mes-card" onclick="abrirExtrato('${k}')">
-        <div class="mes-card-top"><div class="mes-nome">${nomeMes(md.mes,md.ano)}${isCur?' <span class="chip chip-accent">atual</span>':''}</div><span class="sec-badge ${pct===100?'badge-green':pct>50?'badge-yellow':'badge-red'}">${pct}% pago</span></div>
+        <div class="mes-card-top">
+          <div class="mes-nome">${nomeMes(md.mes,md.ano)} ${statusChip}</div>
+          <div class="mes-card-badges">
+            <span class="sec-badge ${pct===100?'badge-green':pct>50?'badge-yellow':'badge-red'}">${pct}% pago</span>
+            <button class="btn-reabrir" ${reabrirDisabled} onclick="reabrirMes(${md.mes},${md.ano},event)" title="${reabrirTitle}">↩ Reabrir</button>
+          </div>
+        </div>
         <div class="mes-stats">
           <div class="mes-stat"><span class="mes-stat-val" style="color:var(--green)">${fmtR(vPg)}</span><span style="font-size:10px;color:var(--text2)">pago</span></div>
           <div class="mes-stat"><span class="mes-stat-val">${fmtR(vTot)}</span><span style="font-size:10px;color:var(--text2)">total</span></div>
@@ -1607,7 +1619,7 @@ async function abrirExtrato(key){
       <div class="sum-card"><div class="sum-label">Total geral</div><div class="sum-value" style="color:var(--text)">${fmtR(tCon+tAv)}</div><div class="sum-sub">contas+avulsos</div></div>
     </div><div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">Contas do mês</div>`;
     pags.forEach(p=>{
-      const por=p.pago_por&&p.pago_por!=='auto'?`<span class="chip chip-accent">${escHtml(p.pago_por)}</span>`:'';
+      const _pc=p.pago_por&&p.pago_por!=='auto'?p.pago_por:''; const por=_pc?`<span class="chip ${_pc.toLowerCase()==="buti"?"chip-buti":_pc.toLowerCase()==="bita"?"chip-bita":"chip-accent"}">${escHtml(_pc)}</span>`:'';
       html+=`<div class="bill-card${p.pago?' paid':''}">
         <div class="bill-icon" style="background:${catBg[p.cat]||'var(--surface2)'}">${p.emoji}</div>
         <div class="bill-info"><div class="bill-name">${escHtml(p.nome)}${por}</div><div class="bill-due">${p.dia?'Dia '+p.dia:'Débito auto'}${p.obs?' • '+escHtml(p.obs):''}</div></div>
@@ -1615,7 +1627,7 @@ async function abrirExtrato(key){
       </div>`;
     });
     if(avs.length){html+=`<div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 8px">Gastos avulsos</div>`;
-    avs.forEach(g=>{html+=`<div class="bill-card"><div class="bill-icon" style="background:var(--yellow-bg)">${ce[g.categoria]||'💳'}</div><div class="bill-info"><div class="bill-name">${escHtml(g.descricao)}${g.registrado_por?`<span class="chip chip-accent">${escHtml(g.registrado_por)}</span>`:''}</div><div class="bill-due">${escHtml(g.data_gasto||'')}</div></div><div class="bill-right"><div class="bill-right-vals"><div class="bill-amount" style="color:var(--yellow)">${fmtR(g.valor)}</div></div></div></div>`;});}
+    avs.forEach(g=>{html+=`<div class="bill-card"><div class="bill-icon" style="background:var(--yellow-bg)">${ce[g.categoria]||'💳'}</div><div class="bill-info"><div class="bill-name">${escHtml(g.descricao)}${g.registrado_por?`<span class="chip ${g.registrado_por.toLowerCase()==="buti"?"chip-buti":g.registrado_por.toLowerCase()==="bita"?"chip-bita":"chip-accent"}">${escHtml(g.registrado_por)}</span>`:""}</div><div class="bill-due">${escHtml(g.data_gasto||'')}</div></div><div class="bill-right"><div class="bill-right-vals"><div class="bill-amount" style="color:var(--yellow)">${fmtR(g.valor)}</div></div></div></div>`;});}
     html+='<div style="height:24px"></div>';
     document.getElementById('modal-body').innerHTML=html;
   }catch(e){document.getElementById('modal-body').innerHTML='<div class="empty-state">Erro ao carregar extrato</div>';}
@@ -1685,6 +1697,52 @@ async function addAvulso(){
   btn.disabled=false;
 }
 
+function editAvulso(id){
+  const g=avulsosDB.find(x=>x.id===id);if(!g)return;
+  const ce={mercado:'🛒',combustivel:'⛽',alimentacao:'🍔',saude:'🏥',lazer:'🎮',outro:'💳'};
+  document.getElementById('modal-title').textContent=`Editar gasto — ${escHtml(g.descricao)}`;
+  document.getElementById('modal-body').innerHTML=`
+    <div class="form-group"><label class="form-label">Emoji / Ícone</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="form-input" type="text" id="edit-av-emoji" value="${escHtml(g.categoria&&ce[g.categoria]?ce[g.categoria]:'💳')}" maxlength="2" style="width:60px;text-align:center;font-size:22px;padding:6px">
+        <span style="font-size:12px;color:var(--text2);flex:1">Ícone do gasto</span>
+      </div></div>
+    <div class="form-group"><label class="form-label">Descrição</label><input class="form-input" id="edit-av-desc" value="${escHtml(g.descricao||'')}"></div>
+    <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-input" type="number" id="edit-av-valor" value="${g.valor}" step="0.01" min="0"></div>
+    <div class="form-group"><label class="form-label">Data</label><input class="form-input" type="date" id="edit-av-data" value="${g.data_gasto||''}"></div>
+    <div class="form-group"><label class="form-label">Categoria</label>
+      <select class="form-select" id="edit-av-cat">
+        <option value="mercado" ${g.categoria==='mercado'?'selected':''}>🛒 Mercado</option>
+        <option value="combustivel" ${g.categoria==='combustivel'?'selected':''}>⛽ Combustível</option>
+        <option value="alimentacao" ${g.categoria==='alimentacao'?'selected':''}>🍔 Alimentação</option>
+        <option value="saude" ${g.categoria==='saude'?'selected':''}>🏥 Saúde</option>
+        <option value="lazer" ${g.categoria==='lazer'?'selected':''}>🎮 Lazer</option>
+        <option value="outro" ${g.categoria==='outro'?'selected':''}>💳 Outro</option>
+      </select></div>
+    <button class="btn-primary" onclick="salvarEdicaoAvulso(${id})">Salvar alterações</button>
+    <button class="btn-secondary" onclick="closeModal()" style="margin-top:6px">Cancelar</button>`;
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+async function salvarEdicaoAvulso(id){
+  const desc  = document.getElementById('edit-av-desc').value.trim();
+  const valor = parseFloat(document.getElementById('edit-av-valor').value)||0;
+  const data  = document.getElementById('edit-av-data').value;
+  const cat   = document.getElementById('edit-av-cat').value;
+  const emoji = (document.getElementById('edit-av-emoji').value||'').trim();
+  const ce={mercado:'🛒',combustivel:'⛽',alimentacao:'🍔',saude:'🏥',lazer:'🎮',outro:'💳'};
+  if(!desc){showToast('Informe a descrição');return;}
+  setSyncStatus('syncing','salvando...');
+  try{
+    await sbPatch('gastos_avulsos',id,{descricao:desc,valor,data_gasto:data,categoria:cat});
+    // Atualiza local
+    const idx=avulsosDB.findIndex(x=>x.id===id);
+    if(idx>-1) avulsosDB[idx]={...avulsosDB[idx],descricao:desc,valor,data_gasto:data,categoria:cat};
+    setSyncStatus('online','sincronizado');
+    closeModal();renderGastos();showToast('Gasto atualizado ✓');
+  }catch(e){setSyncStatus('offline','erro');showToast('Erro: '+e.message);}
+}
+
 async function deleteAvulso(id){
   const g=avulsosDB.find(x=>x.id===id);
   if(!g)return;
@@ -1713,11 +1771,80 @@ async function deleteConta(id){
   );
 }
 
+// Chave de status do mês no Supabase
+function chaveMesStatus(mes, ano) { return `status_${ano}_${String(mes).padStart(2,'0')}`; }
+
+// Cache de status dos meses (evita roundtrips no render)
+let _statusMeses = {};
+
+async function carregarStatusMeses() {
+  // Busca todas as chaves de status de uma vez
+  try {
+    const rows = await sbGet('configuracoes', `chave=like.status_%`);
+    _statusMeses = {};
+    rows.forEach(r => { _statusMeses[r.chave] = r.valor; });
+  } catch(_) {}
+}
+
+function mesFechado(mes, ano) {
+  return !!_statusMeses[chaveMesStatus(mes, ano)]?.fechado;
+}
+
 async function fecharMes(){
   showConfirm(
-    `Fechar ${nomeMes(MES_ATUAL,ANO_ATUAL)}? Os dados ficam no histórico.`,
-    ()=>showToast('Mês fechado! Reinicie o app no próximo mês.'),
+    `Fechar ${nomeMes(MES_ATUAL,ANO_ATUAL)}? As contas do próximo mês serão preparadas.`,
+    async ()=>{
+      setSyncStatus('syncing','fechando mês...');
+      try{
+        const proxMes = MES_ATUAL===12 ? 1 : MES_ATUAL+1;
+        const proxAno = MES_ATUAL===12 ? ANO_ATUAL+1 : ANO_ATUAL;
+        const exist = await sbGet('pagamentos',`mes=eq.${proxMes}&ano=eq.${proxAno}`);
+        if(exist.length===0){
+          for(const c of contasDB){
+            const isAuto = c.tipo==='auto';
+            await sbPost('pagamentos',{
+              conta_id:c.id, nome:c.nome, emoji:c.emoji, valor:c.valor,
+              cat:c.cat, tipo:c.tipo, obs:c.obs, dia:c.dia,
+              mes:proxMes, ano:proxAno,
+              pago:isAuto, pago_em:isAuto?new Date().toISOString():null,
+              pago_por:isAuto?'auto':''
+            });
+          }
+        }
+        // Salvar status de fechamento
+        const statusKey = chaveMesStatus(MES_ATUAL, ANO_ATUAL);
+        const statusVal = { fechado:true, fechadoEm:new Date().toISOString(), fechadoPor:PESSOA_ATIVA };
+        await sbSetConfig(statusKey, statusVal);
+        _statusMeses[statusKey] = statusVal;
+        setSyncStatus('online','sincronizado');
+        showToast(`${nomeMes(MES_ATUAL,ANO_ATUAL)} fechado! Abra o app no próximo mês.`);
+        renderHistorico();
+      }catch(e){setSyncStatus('offline','erro');showToast('Erro: '+e.message);}
+    },
     'FECHAR'
+  );
+}
+
+async function reabrirMes(mes, ano, e){
+  if(e) e.stopPropagation();
+  if(!mesFechado(mes, ano)) return; // segurança: só reabrir se estiver fechado
+  showConfirm(
+    `Reabrir ${nomeMes(mes,ano)}? O mês voltará ao status aberto.`,
+    async ()=>{
+      setSyncStatus('syncing','reabrindo mês...');
+      try{
+        // Remove o status de fechamento
+        const statusKey = chaveMesStatus(mes, ano);
+        await fetch(`${SB_URL}/rest/v1/configuracoes?chave=eq.${encodeURIComponent(statusKey)}`,{
+          method:'DELETE', headers:getAuthHeader()
+        });
+        delete _statusMeses[statusKey];
+        setSyncStatus('online','sincronizado');
+        showToast(`${nomeMes(mes,ano)} reaberto ✓`);
+        renderHistorico();
+        if(mes===MES_ATUAL && ano===ANO_ATUAL) await reloadData();
+      }catch(e){setSyncStatus('offline','erro');showToast('Erro: '+e.message);}
+    }
   );
 }
 
@@ -1762,32 +1889,7 @@ async function salvarEdicaoConta(id){
   }catch(e){setSyncStatus('offline','erro');showToast('Erro: '+e.message);}
 }
 
-function editVariavel(idx){
-  const v=variaveisBase[idx];
-  document.getElementById('modal-title').textContent=`Editar — ${v.nome}`;
-  document.getElementById('modal-body').innerHTML=`
-    <div class="form-group"><label class="form-label">Valor estimado mensal (R$)</label><input class="form-input" type="number" id="edit-var-valor" value="${v.valor}" step="0.01" min="0"></div>
-    <div class="form-group"><label class="form-label">Frequência</label><input class="form-input" id="edit-var-freq" value="${v.freq}"></div>
-    <div class="form-group"><label class="form-label">Observação</label><input class="form-input" id="edit-var-obs" value="${v.obs}"></div>
-    <button class="btn-primary" onclick="salvarEdicaoVariavel(${idx})">Salvar alterações</button>
-    <button class="btn-secondary" onclick="closeModal()" style="margin-top:6px">Cancelar</button>`;
-  document.getElementById('modal-overlay').classList.remove('hidden');
-}
-async function salvarEdicaoVariavel(idx){
-  variaveisBase[idx].valor=parseFloat(document.getElementById('edit-var-valor').value)||0;
-  variaveisBase[idx].freq=document.getElementById('edit-var-freq').value.trim();
-  variaveisBase[idx].obs=document.getElementById('edit-var-obs').value.trim();
-  setSyncStatus('syncing','salvando...');
-  try{
-    await sbSetConfig('variaveis', variaveisBase);
-    setSyncStatus('online','sincronizado');
-  }catch(e){
-    try{localStorage.setItem('variaveis_bak',JSON.stringify(variaveisBase));}catch(_){}
-    setSyncStatus('offline','erro ao salvar');
-    showToast('Salvo localmente — sem conexão');
-  }
-  closeModal();renderGastos();renderDashboard();showToast(`${escHtml(variaveisBase[idx].nome)} atualizado ✓`);
-}
+// salvarEdicaoVariavel removida — variáveis substituídas por gastos avulsos
 
 // ===== CSV =====
 function handleCSV(event){

@@ -1,4 +1,5 @@
 # ===== SEGURANÇA — nunca versionar =====
+CONTEXT.md
 SECURITY.md
 e2e/config.py
 

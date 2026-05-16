@@ -722,7 +722,6 @@ body {
         <option value="financiamento">Financiamento</option>
         <option value="fixa">Conta fixa</option>
         <option value="assinatura">Assinatura / Streaming</option>
-        <option value="variavel">Gasto variável</option>
       </select>
     </div>
     <div class="form-group"><label class="form-label">Tipo de pagamento</label>
@@ -1311,7 +1310,7 @@ async function init(){
       agendarAlertasLocais();
     }
   }
-  catch(e){setSyncStatus('offline','sem conexão');showToast('Sincronize as contas do casal');}
+  catch(e){setSyncStatus('offline','sem conexão');}
 }
 
 async function startup() {

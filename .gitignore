@@ -1,9 +1,12 @@
-# ===== SEGURANÇA — nunca versionar =====
+# Security - never version
 CONTEXT.md
 SECURITY.md
 e2e/config.py
+.env
+.env.local
+.env.*.local
 
-# ===== DEPENDÊNCIAS =====
+# Dependencies
 node_modules/
 __pycache__/
 *.pyc
@@ -12,17 +15,22 @@ __pycache__/
 env/
 venv/
 
-# ===== SISTEMA =====
-.DS_Store
-Thumbs.db
-desktop.ini
+# Local tooling state
+.claude/
+.supabase/
+supabase/.temp/
 
-# ===== EDITORES =====
+# Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# ===== TESTES — arquivos temporários =====
+# Tests and logs
 /tmp/
 *.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

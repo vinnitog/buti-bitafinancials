@@ -25,7 +25,7 @@
   --border: rgba(167,139,80,0.13);
   --border2: rgba(167,139,80,0.26);
   --text: #f5f0e8;
-  --text2: #7a7460;
+  --text2: #aaa18a;
   --accent: #8a9a3a;
   --accent2: #a8bc48;
   --green: #a8bc48;
@@ -52,7 +52,7 @@ body.theme-purple {
   --border: rgba(192,132,252,0.11);
   --border2: rgba(192,132,252,0.24);
   --text: #f2eeff;
-  --text2: #7a6890;
+  --text2: #b9a6cc;
   --accent: #c084fc;
   --accent2: #d8a8ff;
   --green: #a8bc48;
@@ -111,6 +111,16 @@ body {
 .sync-dot.offline { background:var(--red); }
 .sync-dot.syncing { background:var(--yellow); animation:pulse 1s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+button, .toggle-switch, .upload-area, .user-chip { min-height:44px; min-width:44px; }
+button:focus-visible,
+.form-input:focus-visible,
+.form-select:focus-visible,
+.toggle-switch:focus-visible,
+.upload-area:focus-visible {
+  outline:2px solid var(--accent2);
+  outline-offset:2px;
+}
 
 /* NAV */
 .nav { display:flex; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; }
@@ -585,12 +595,12 @@ body {
       <span style="color:#a8bc48">Buti</span><span class="amp">&</span><span style="color:#c084fc">Bita</span><span class="financials">Financials</span>
     </div>
     <div class="header-right">
-      <div id="alert-count" class="header-badge" style="display:none" onclick="goAlerts()">⚠ ...</div>
-      <div class="user-chip" id="user-chip" onclick="fazerLogout()" title="Sair">
+      <div id="alert-count" class="header-badge" style="display:none" onclick="goAlerts()" onkeydown="handleKeyActivate(event,goAlerts)" role="button" tabindex="0" aria-label="Ver alertas urgentes">⚠ ...</div>
+      <div class="user-chip" id="user-chip" onclick="fazerLogout()" onkeydown="handleKeyActivate(event,fazerLogout)" title="Sair" role="button" tabindex="0" aria-label="Sair">
         <div class="user-avatar" id="user-avatar" style="background:#a8bc48">?</div>
         <span id="user-label">...</span>
       </div>
-      <button class="theme-toggle" onclick="toggleTheme()" title="Trocar tema">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Trocar tema" aria-label="Trocar tema">
         <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
           <!-- metade esquerda verde -->
           <path d="M14 2 A12 12 0 0 0 14 26 A6 6 0 0 1 14 14 A6 6 0 0 0 14 2Z" fill="#4ade80"/>
@@ -634,7 +644,7 @@ body {
     <div class="salary-card salary-buti">
       <div class="salary-title" style="display:flex;align-items:center;justify-content:space-between">
         <span>💼 <span style="color:#a8bc48">Buti</span></span>
-        <button class="salary-eye-btn" id="eye-buti" onclick="toggleSalario('buti')" title="Mostrar/ocultar">
+        <button class="salary-eye-btn" id="eye-buti" onclick="toggleSalario('buti')" title="Mostrar/ocultar" aria-label="Mostrar ou ocultar entradas de Buti">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
       </div>
@@ -644,7 +654,7 @@ body {
     <div class="salary-card salary-bita">
       <div class="salary-title" style="display:flex;align-items:center;justify-content:space-between">
         <span>💼 <span style="color:#c084fc">Bita</span></span>
-        <button class="salary-eye-btn" id="eye-bita" onclick="toggleSalario('bita')" title="Mostrar/ocultar">
+        <button class="salary-eye-btn" id="eye-bita" onclick="toggleSalario('bita')" title="Mostrar/ocultar" aria-label="Mostrar ou ocultar entradas de Bita">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
       </div>
@@ -655,7 +665,7 @@ body {
   <div class="salary-total-bar">
     <span class="salary-total-label" style="display:flex;align-items:center;gap:6px">
       Renda total do casal
-      <button class="salary-eye-btn" id="eye-total" onclick="toggleSalario('total')" title="Mostrar/ocultar" style="vertical-align:middle">
+      <button class="salary-eye-btn" id="eye-total" onclick="toggleSalario('total')" title="Mostrar/ocultar" aria-label="Mostrar ou ocultar renda total" style="vertical-align:middle">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
     </span>
@@ -795,9 +805,9 @@ body {
   <div id="subtab-import" class="subtab">
     <div class="info-box">Exporte sua planilha como <strong>CSV</strong> e importe aqui.<br>Colunas esperadas: <strong>nome, valor, dia, categoria, tipo, observacao</strong></div>
     <div class="upload-area" onclick="document.getElementById('csv-upload').click()">
-      <input type="file" id="csv-upload" accept=".csv,.xlsx" onchange="handleCSV(event)">
+      <input type="file" id="csv-upload" accept=".csv" onchange="handleCSV(event)">
       <div class="upload-icon">📂</div>
-      <div class="upload-text">Clique para selecionar o arquivo<br><strong>CSV ou XLSX</strong> exportado do Google Sheets</div>
+      <div class="upload-text">Clique para selecionar o arquivo<br><strong>CSV</strong> exportado do Google Sheets</div>
     </div>
     <div id="csv-preview" style="display:none">
       <div class="sec-title">Preview da importação</div>
@@ -819,9 +829,9 @@ body {
 <div class="section" id="section-config">
   <button class="btn-secondary" onclick="reloadData()" style="margin-bottom:16px">🔄 Sincronizar agora</button>
   <div class="sec-title">Notificações</div>
-  <div class="notif-row"><div><div class="notif-title">🔔 Push notifications</div><div class="notif-sub">Receba alertas no celular mesmo com o app fechado</div></div><div class="toggle-switch" id="toggle-notif" onclick="toggleSwitch('toggle-notif',true)"></div></div>
-  <div class="notif-row"><div><div class="notif-title">⚡ Aviso 3 dias antes</div><div class="notif-sub">Push às 8h quando faltar 3 dias para o vencimento</div></div><div class="toggle-switch on" id="toggle-early" onclick="toggleSwitch('toggle-early',false)"></div></div>
-  <div class="notif-row"><div><div class="notif-title">🚨 Alerta no dia do vencimento</div><div class="notif-sub">Push às 8h e ao meio-dia na data de pagar</div></div><div class="toggle-switch on" id="toggle-dia" onclick="toggleSwitch('toggle-dia',false)"></div></div>
+  <div class="notif-row"><div><div class="notif-title">🔔 Push notifications</div><div class="notif-sub">Receba alertas no celular mesmo com o app fechado</div></div><div class="toggle-switch" id="toggle-notif" onclick="toggleSwitch('toggle-notif',true)" onkeydown="handleKeyActivate(event,()=>toggleSwitch('toggle-notif',true))" role="switch" tabindex="0" aria-checked="false" aria-label="Ativar push notifications"></div></div>
+  <div class="notif-row"><div><div class="notif-title">⚡ Aviso 3 dias antes</div><div class="notif-sub">Push às 8h quando faltar 3 dias para o vencimento</div></div><div class="toggle-switch on" id="toggle-early" onclick="toggleSwitch('toggle-early',false)" onkeydown="handleKeyActivate(event,()=>toggleSwitch('toggle-early',false))" role="switch" tabindex="0" aria-checked="true" aria-label="Aviso 3 dias antes"></div></div>
+  <div class="notif-row"><div><div class="notif-title">🚨 Alerta no dia do vencimento</div><div class="notif-sub">Push às 8h e ao meio-dia na data de pagar</div></div><div class="toggle-switch on" id="toggle-dia" onclick="toggleSwitch('toggle-dia',false)" onkeydown="handleKeyActivate(event,()=>toggleSwitch('toggle-dia',false))" role="switch" tabindex="0" aria-checked="true" aria-label="Alerta no dia do vencimento"></div></div>
   <div class="divider"></div>
   <div class="sec-title" style="color:var(--red)">Zona de perigo</div>
   <button class="btn-danger" onclick="fecharMes()">🗂 Fechar mês atual e iniciar novo</button>
@@ -830,7 +840,7 @@ body {
 </div></div><!-- end scroll-area / end app-shell -->
 
 <!-- MODAL -->
-<div class="modal-overlay hidden" id="modal-overlay" onclick="closeModal(event)">
+<div class="modal-overlay hidden" id="modal-overlay" onclick="closeModal(event)" role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-header"><div class="modal-title" id="modal-title">Extrato</div><button class="modal-close" onclick="closeModal()">✕</button></div>
@@ -838,7 +848,7 @@ body {
   </div>
 </div>
 <!-- MODAL NOVA ENTRADA -->
-<div class="modal-overlay hidden" id="modal-entrada">
+<div class="modal-overlay hidden" id="modal-entrada" role="dialog" aria-modal="true" aria-labelledby="modal-entrada-title">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-header">
@@ -864,7 +874,7 @@ body {
 </div>
 
 <!-- MODAL DE CONFIRMAÇÃO -->
-<div class="modal-overlay hidden" id="confirm-overlay">
+<div class="modal-overlay hidden" id="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
   <div class="modal" style="max-height:auto">
     <div class="modal-handle"></div>
     <div class="modal-header">
@@ -890,7 +900,7 @@ body {
 <script>
 const SB_URL='https://ykoyezbftqxrlqvwlrek.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlrb3llemJmdHF4cmxxdndscmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNDU3NzgsImV4cCI6MjA5MzgyMTc3OH0.izLOrR0tRSxLuYo0nhXzcdjU4mZ31zU5HZ3tw_2LoTM';
-const VARIAVEIS_EST=3460, ASSINATURAS_EST=265;
+const ASSINATURAS_EST=265;
 const hoje=new Date(), MES_ATUAL=hoje.getMonth()+1, ANO_ATUAL=hoje.getFullYear(), DIA_HOJE=hoje.getDate();
 let PESSOA_ATIVA=localStorage.getItem('pessoa')||'Buti';
 let contasDB=[], pagamentosDB=[], avulsosDB=[], csvPendente=[];
@@ -903,6 +913,26 @@ let _entradaPessoa = 'buti';  // pessoa ativa no modal
 
 function chaveEntradas() {
   return `entradas_${ANO_ATUAL}_${String(MES_ATUAL).padStart(2,'0')}`;
+}
+
+function entradaBackupKey() {
+  return `entradas_bak_${ANO_ATUAL}_${String(MES_ATUAL).padStart(2,'0')}`;
+}
+
+function salvarEntradasBackup() {
+  localStorage.setItem(entradaBackupKey(), JSON.stringify(entradas));
+}
+
+function carregarEntradasBackup() {
+  try {
+    const raw = localStorage.getItem(entradaBackupKey());
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || (!Array.isArray(parsed.buti) && !Array.isArray(parsed.bita))) return null;
+    return { buti: parsed.buti || [], bita: parsed.bita || [] };
+  } catch (_) {
+    return null;
+  }
 }
 
 function totalEntradas(pessoa) {
@@ -929,6 +959,27 @@ function renderEntradasTab() {
     }
     if(total) total.textContent = fmtR(totalEntradas(p));
   });
+}
+
+function handleKeyActivate(event, action) {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  event.preventDefault();
+  action();
+}
+
+function bindFormLabels() {
+  document.querySelectorAll('.form-group').forEach(group => {
+    const label = group.querySelector('label.form-label:not([for])');
+    const input = group.querySelector('input[id], select[id], textarea[id]');
+    if (label && input?.id) label.setAttribute('for', input.id);
+  });
+}
+
+function syncSwitchAria(id) {
+  const el = document.getElementById(id);
+  if (el?.getAttribute('role') === 'switch') {
+    el.setAttribute('aria-checked', el.classList.contains('on') ? 'true' : 'false');
+  }
 }
 
 function abrirModalEntrada(pessoa) {
@@ -962,6 +1013,7 @@ async function salvarEntrada() {
   setSyncStatus('syncing','salvando...');
   try {
     await sbSetConfig(chaveEntradas(), entradas);
+    salvarEntradasBackup();
     setSyncStatus('online','sincronizado');
     fecharModalEntrada();
     renderEntradasTab();
@@ -982,6 +1034,7 @@ async function removerEntrada(pessoa, id) {
     setSyncStatus('syncing','salvando...');
     try {
       await sbSetConfig(chaveEntradas(), entradas);
+      salvarEntradasBackup();
       setSyncStatus('online','sincronizado');
       renderEntradasTab();
       renderDashboard();
@@ -1186,11 +1239,12 @@ async function sbGetConfig(chave){
 async function sbSetConfig(chave,valor){
   const existing=await sbGetConfig(chave);
   if(existing!==null){
-    await fetch(`${SB_URL}/rest/v1/configuracoes?chave=eq.${encodeURIComponent(chave)}`,{
+    const r=await fetch(`${SB_URL}/rest/v1/configuracoes?chave=eq.${encodeURIComponent(chave)}`,{
       method:'PATCH',
       headers:{...getAuthHeader(),'Content-Type':'application/json','Prefer':'return=minimal'},
       body:JSON.stringify({valor,updated_at:new Date().toISOString()})
     });
+    if(!r.ok) throw new Error(await r.text());
   } else {
     await sbPost('configuracoes',{chave,valor});
   }
@@ -1217,14 +1271,6 @@ const contasIniciais=[
   {nome:'Globoplay',emoji:'📺',valor:28,dia:0,cat:'assinatura',tipo:'auto',obs:''},
   {nome:'Claude Pro',emoji:'🤖',valor:120,dia:0,cat:'assinatura',tipo:'auto',obs:'plano pro'},
 ];
-let variaveisBase=[
-  {nome:'Supermercado',emoji:'🛒',valor:1600,freq:'4x por mês (toda semana)',obs:'≈ R$400/ida'},
-  {nome:'Combustível',emoji:'⛽',valor:400,freq:'2x por mês',obs:'≈ R$200/abastecimento'},
-  {nome:'iFood',emoji:'🍔',valor:480,freq:'Toda sexta-feira',obs:'≈ R$120/pedido'},
-  {nome:'Ajuda à esposa',emoji:'💑',valor:1500,freq:'Mensal',obs:'via cartão de crédito'},
-  {nome:'Ajuda pais',emoji:'👨‍👩‍👦',valor:300,freq:'Esporádico',obs:'≈ R$300/mês'},
-];
-// variaveisBase carregadas do Supabase em loadData()
 
 // ===== SUB-TABS =====
 // ===== TOGGLE SENHA LOGIN =====
@@ -1328,10 +1374,12 @@ async function startup() {
   if(localStorage.getItem('notif_enabled')==='1' && 'Notification' in window && Notification.permission==='granted'){
     const el = document.getElementById('toggle-notif');
     if(el) el.classList.add('on');
+    syncSwitchAria('toggle-notif');
   }
 
   // ===== STARTUP — dentro do DOMContentLoaded para garantir DOM pronto =====
 document.addEventListener('DOMContentLoaded', () => {
+  bindFormLabels();
   // Teclas de atalho no formulário de login
   document.getElementById('login-password').addEventListener('keydown', e => {
     if (e.key === 'Enter') fazerLogin();
@@ -1363,8 +1411,12 @@ async function loadData(){
       // Converte base+bonus em entradas se ainda não migrou
       if (salDb.buti?.base > 0) entradas.buti = [{id:'leg_buti_base', desc:'Salário base', valor:salDb.buti.base, data:''}, ...(salDb.buti.bonus>0?[{id:'leg_buti_bonus', desc:'Bônus', valor:salDb.buti.bonus, data:''}]:[])];
       if (salDb.bita?.base > 0) entradas.bita = [{id:'leg_bita_base', desc:'Salário base', valor:salDb.bita.base, data:''}, ...(salDb.bita.bonus>0?[{id:'leg_bita_bonus', desc:'Bônus', valor:salDb.bita.bonus, data:''}]:[])];
+    } else {
+      const backup = carregarEntradasBackup();
+      if (backup) entradas = backup;
     }
   }
+  salvarEntradasBackup();
 
   // variaveisBase removida — seção substituída por gastos avulsos
 
@@ -1396,10 +1448,24 @@ function escHtml(s){
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
+function parseMoney(v){
+  const cleaned=String(v??'').trim().replace(/[^\d,.-]/g,'');
+  if(!cleaned)return 0;
+  const hasComma=cleaned.includes(','),hasDot=cleaned.includes('.');
+  let normalized=cleaned;
+  if(hasComma&&hasDot){
+    normalized=cleaned.lastIndexOf(',')>cleaned.lastIndexOf('.')
+      ? cleaned.replace(/\./g,'').replace(',','.')
+      : cleaned.replace(/,/g,'');
+  } else if(hasComma) {
+    normalized=cleaned.replace(',','.');
+  }
+  return parseFloat(normalized)||0;
+}
 function sanitizeCsvRow(r){
   return {
     nome:  escHtml(String(r.nome||r.name||'').slice(0,100)).trim(),
-    valor: Math.max(0, Math.min(999999, parseFloat((r.valor||'0').replace(',','.'))||0)),
+    valor: Math.max(0, Math.min(999999, parseMoney(r.valor||'0'))),
     dia:   Math.min(31, Math.max(0, parseInt(r.dia||'0')||0)),
     cat:   ['financiamento','fixa','assinatura','variavel'].includes(r.categoria||r.cat) ? (r.categoria||r.cat) : 'fixa',
     tipo:  ['manual','auto','credito'].includes(r.tipo) ? r.tipo : 'manual',
@@ -1443,14 +1509,15 @@ function makeCard(c,showToggle=true,panelMode=false){
     : _pessoa.toLowerCase()==='buti' ? 'chip-buti'
     : _pessoa.toLowerCase()==='bita' ? 'chip-bita' : 'chip-accent';
   const pagoPor = _pessoa ? `<span class="chip ${_chipCls}">${escHtml(_pessoa)}</span>` : '';
-  const toggleBtn=(showToggle&&!isAuto)?`<button class="toggle-paid ${isPago?'checked':''}" onclick="togglePago(${c.id},event)">${isPago?'✓':''}</button>`:'';
-  const editBtn=`<button class="edit-btn" onclick="editConta(${c.id})" title="Editar">✏️</button>`;
-  const delBtn=!panelMode?`<button class="del-btn" onclick="deleteConta(${c.id})" title="Excluir conta">🗑</button>`:'';
+  const nomeSeguro=escHtml(c.nome);
+  const toggleBtn=(showToggle&&!isAuto)?`<button class="toggle-paid ${isPago?'checked':''}" onclick="togglePago(${c.id},event)" aria-label="${isPago?'Desmarcar conta como paga':'Marcar conta como paga'}">${isPago?'✓':''}</button>`:'';
+  const editBtn=`<button class="edit-btn" onclick="editConta(${c.id})" title="Editar" aria-label="Editar conta ${nomeSeguro}">✏️</button>`;
+  const delBtn=!panelMode?`<button class="del-btn" onclick="deleteConta(${c.id})" title="Excluir conta" aria-label="Excluir conta ${nomeSeguro}">🗑</button>`:'';
   return `<div class="bill-card${urgCls}${paidCls}" id="card-${c.id}">
     ${toggleBtn}
     <div class="bill-icon" style="background:${catBg[c.cat]||'var(--surface2)'}">${c.emoji}</div>
     <div class="bill-info">
-      <div class="bill-name">${escHtml(c.nome)}${autoTag}${pagoPor}</div>
+      <div class="bill-name">${nomeSeguro}${autoTag}${pagoPor}</div>
       <div class="bill-due">${panelMode ? (c.dia ? 'Dia '+c.dia : 'Débito automático') : dueLabel(c.dia)}${c.obs&&!panelMode?' • '+escHtml(c.obs):''}</div>
     </div>
     <div class="bill-right">
@@ -1498,7 +1565,8 @@ function renderDashboard(){
   const contasManuais=contasDB.filter(c=>c.dia>0&&c.tipo!=='auto');
   const pagas=contasManuais.filter(c=>{const p=getPag(c.id);return p&&p.pago;});
   const pendentes=contasManuais.filter(c=>{const p=getPag(c.id);return!p||!p.pago;});
-  const saldo=totalSalario-totalContas-VARIAVEIS_EST;
+  const totalAvulsos=avulsosDB.reduce((a,g)=>a+Number(g.valor),0);
+  const saldo=totalSalario-totalContas-totalAvulsos;
 
   document.getElementById('total-contas').textContent=fmtR(totalContas);
   document.getElementById('total-pagas').textContent=fmtR(pagas.reduce((a,c)=>a+Number(c.valor),0));
@@ -1506,7 +1574,7 @@ function renderDashboard(){
   document.getElementById('total-pendente').textContent=fmtR(pendentes.reduce((a,c)=>a+Number(c.valor),0));
   document.getElementById('pendente-count').textContent=`${pendentes.length} pendentes`;
   const se=document.getElementById('saldo-estimado');se.textContent=fmtR(saldo);se.style.color=saldo>=0?'var(--green)':'var(--red)';
-  document.getElementById('fixos-total').textContent=fmtR(totalContas+VARIAVEIS_EST);
+  document.getElementById('fixos-total').textContent=fmtR(totalContas+totalAvulsos);
 
   const pct=contasManuais.length>0?Math.round((pagas.length/contasManuais.length)*100):0;
   document.getElementById('progress-pct').textContent=pct+'%';
@@ -1852,14 +1920,14 @@ function editConta(id){
   const c=contasDB.find(x=>x.id===id);if(!c)return;
   document.getElementById('modal-title').textContent=`Editar — ${c.nome}`;
   document.getElementById('modal-body').innerHTML=`
-    <div class="form-group"><label class="form-label">Nome</label><input class="form-input" id="edit-nome" value="${c.nome}"></div>
+    <div class="form-group"><label class="form-label">Nome</label><input class="form-input" id="edit-nome" value="${escHtml(c.nome||'')}"></div>
     <div class="form-group"><label class="form-label">Valor (R$)</label><input class="form-input" type="number" id="edit-valor" value="${c.valor}" step="0.01" min="0"></div>
     <div class="form-group"><label class="form-label">Emoji / Ícone</label>
       <div style="display:flex;gap:8px;align-items:center">
         <input class="form-input" type="text" id="edit-emoji" value="${escHtml(c.emoji||'')}" maxlength="2" style="width:60px;text-align:center;font-size:22px;padding:6px">
         <span style="font-size:12px;color:var(--text2);flex:1">Ícone exibido no card da conta</span>
       </div></div>
-    <div class="form-group"><label class="form-label">Observação</label><input class="form-input" id="edit-obs" value="${c.obs||''}"></div>
+    <div class="form-group"><label class="form-label">Observação</label><input class="form-input" id="edit-obs" value="${escHtml(c.obs||'')}"></div>
     <button class="btn-primary" onclick="salvarEdicaoConta(${id})">Salvar alterações</button>
     <button class="btn-secondary" onclick="closeModal()" style="margin-top:6px">Cancelar</button>`;
   document.getElementById('modal-overlay').classList.remove('hidden');
@@ -1915,7 +1983,8 @@ async function confirmCSVImport(){
     const em={financiamento:'📄',fixa:'🏠',assinatura:'📺',variavel:'💳'};
     for(const r of csvPendente){const[nova]=await sbPost('contas',{...r,emoji:em[r.cat]||'💰',ativo:true,criado_por:PESSOA_ATIVA});await sbPost('pagamentos',{conta_id:nova.id,nome:r.nome,emoji:em[r.cat]||'💰',valor:r.valor,cat:r.cat,tipo:r.tipo,obs:r.obs,dia:r.dia,mes:MES_ATUAL,ano:ANO_ATUAL,pago:r.tipo==='auto',pago_em:r.tipo==='auto'?new Date().toISOString():null,pago_por:r.tipo==='auto'?'auto':''});}
     contasDB=await sbGet('contas','ativo=eq.true&order=cat,dia');pagamentosDB=await sbGet('pagamentos',`mes=eq.${MES_ATUAL}&ano=eq.${ANO_ATUAL}`);
-    setSyncStatus('online','sincronizado');cancelCSV();renderAll();showToast(`${csvPendente.length} contas importadas ✓`);csvPendente=[];
+    const totalImportadas=csvPendente.length;
+    setSyncStatus('online','sincronizado');cancelCSV();renderAll();showToast(`${totalImportadas} contas importadas ✓`);
   }catch(e){setSyncStatus('offline','erro');showToast('Erro: '+e.message);}
 }
 function cancelCSV(){document.getElementById('csv-preview').style.display='none';document.getElementById('csv-upload').value='';csvPendente=[];}
@@ -2004,6 +2073,7 @@ function toggleSwitch(id, notif) {
     Notification.requestPermission().then(async p => {
       if (p === 'granted') {
         el.classList.add('on');
+        syncSwitchAria(id);
         localStorage.setItem('notif_enabled', '1');
         setSyncStatus('syncing', 'ativando notificações...');
         const ok = await registrarPushSubscription();
@@ -2016,6 +2086,7 @@ function toggleSwitch(id, notif) {
   } else {
     const novoEstado = !wasOn;
     el.classList.toggle('on');
+    syncSwitchAria(id);
     if (id === 'toggle-notif') {
       localStorage.setItem('notif_enabled', novoEstado ? '1' : '0');
       if (!novoEstado) cancelarPushSubscription();
@@ -2101,14 +2172,12 @@ setInterval(async()=>{
     const n=await sbGet('pagamentos',`mes=eq.${MES_ATUAL}&ano=eq.${ANO_ATUAL}`);
     const av=await sbGet('gastos_avulsos',`mes=eq.${MES_ATUAL}&ano=eq.${ANO_ATUAL}&order=created_at.desc`);
     const entradasDb=await sbGetConfig(chaveEntradas());
-    const varDb=await sbGetConfig('variaveis');
     const entradasChanged = entradasDb && JSON.stringify(entradasDb)!==JSON.stringify(entradas);
-    const varChanged = varDb && JSON.stringify(varDb)!==JSON.stringify(variaveisBase);
     const pagChanged = JSON.stringify(n)!==JSON.stringify(pagamentosDB);
-    if(pagChanged||entradasChanged||varChanged){
+    const avulsosChanged = JSON.stringify(av)!==JSON.stringify(avulsosDB);
+    if(pagChanged||entradasChanged||avulsosChanged){
       pagamentosDB=n; avulsosDB=av;
       if(entradasChanged){ entradas=entradasDb; renderEntradasTab(); }
-      if(varChanged) variaveisBase=varDb;
       renderAll(); setSyncStatus('online','atualizado');
     }
   }catch(e){

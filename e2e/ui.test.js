@@ -128,10 +128,18 @@ describe('TC-UI: Sub-abas em +Novo', () => {
     }
   });
 
-  test('HTML contém formulário de salários com 4 campos', () => {
-    const campos = ['sal-buti-base', 'sal-buti-bonus', 'sal-bita-base', 'sal-bita-bonus'];
-    for (const id of campos) {
-      assert.match(appHtml, new RegExp(`id="${id}"`), `Campo ${id} não encontrado`);
+  test('HTML contém fluxo de entradas mensais por pessoa', () => {
+    const ids = [
+      'entradas-buti-list',
+      'entradas-buti-total',
+      'entradas-bita-list',
+      'entradas-bita-total',
+      'entrada-desc',
+      'entrada-valor',
+      'entrada-data',
+    ];
+    for (const id of ids) {
+      assert.match(appHtml, new RegExp(`id="${id}"`), `Elemento ${id} não encontrado`);
     }
   });
 });
@@ -139,8 +147,8 @@ describe('TC-UI: Sub-abas em +Novo', () => {
 // ─── TC-UI: Cards de salário no painel ───────────────────────────────────────
 
 describe('TC-UI: Dashboard — cards de salário', () => {
-  test('HTML contém IDs de exibição dos salários', () => {
-    const ids = ['salary-buti-base', 'salary-buti-bonus', 'salary-bita-base', 'salary-bita-bonus', 'salary-total'];
+  test('HTML contém IDs de exibição das entradas', () => {
+    const ids = ['salary-buti-base', 'salary-buti-count', 'salary-bita-base', 'salary-bita-count', 'salary-total'];
     for (const id of ids) {
       assert.match(appHtml, new RegExp(`id="${id}"`), `Elemento ${id} não encontrado no painel`);
     }
@@ -149,6 +157,11 @@ describe('TC-UI: Dashboard — cards de salário', () => {
   test('HTML contém salary-total-bar para renda do casal', () => {
     assert.match(appHtml, /salary-total-bar/);
     assert.match(appHtml, /Renda total do casal/);
+  });
+
+  test('saldo estimado usa gastos avulsos reais em vez de variável fixa antiga', () => {
+    assert.match(appScript, /avulsosDB\.reduce\(\(a,g\)=>a\+Number\(g\.valor\),0\)/);
+    assert.doesNotMatch(appScript, /VARIAVEIS_EST/);
   });
 });
 
@@ -228,8 +241,9 @@ describe('TC-UI-016/017: Alertas e badge de urgentes', () => {
     assert.match(appHtml, /id="alert-area"/);
   });
 
-  test('HTML contém badge urgentes-badge', () => {
-    assert.match(appHtml, /id="urgentes-badge"/);
+  test('HTML usa alert-count como badge único de urgências', () => {
+    assert.match(appHtml, /id="alert-count"/);
+    assert.doesNotMatch(appHtml, /id="urgentes-badge"/);
   });
 
   test('badge alert-count chama goAlerts ao clicar', () => {
@@ -327,7 +341,8 @@ describe('TC-UI-012: Seleção Buti/Bita', () => {
 describe('TC-UI-015: Importação CSV com preview', () => {
   test('HTML contém área de upload com input file', () => {
     assert.match(appHtml, /id="csv-upload"/);
-    assert.match(appHtml, /accept="\.csv,\.xlsx"/);
+    assert.match(appHtml, /accept="\.csv"/);
+    assert.doesNotMatch(appHtml, /accept="[^"]*\.xlsx/);
   });
 
   test('HTML contém área de preview antes de confirmar', () => {
@@ -379,14 +394,15 @@ describe('Polling e sincronização compartilhada', () => {
     assert.match(appScript, /setInterval.*30000/s);
   });
 
-  test('polling verifica salários e variáveis além de pagamentos', () => {
-    assert.match(appScript, /salChanged/);
-    assert.match(appScript, /varChanged/);
+  test('polling verifica entradas e avulsos além de pagamentos', () => {
+    assert.match(appScript, /entradasChanged/);
+    assert.match(appScript, /avulsosChanged/);
   });
 
-  test('fallback localStorage quando Supabase falha', () => {
-    assert.match(appScript, /salarios_bak/);
-    assert.match(appScript, /variaveis_bak/);
+  test('entradas mensais têm fallback localStorage quando Supabase falha', () => {
+    assert.match(appScript, /entradaBackupKey/);
+    assert.match(appScript, /localStorage\.setItem\(entradaBackupKey/);
+    assert.match(appScript, /localStorage\.getItem\(entradaBackupKey/);
   });
 
   test('sbGetConfig e sbSetConfig estão definidos', () => {
@@ -415,5 +431,43 @@ describe('TC-SEC: Verificações de segurança no código', () => {
   test('Supabase URL e Key estão presentes no script', () => {
     assert.match(appScript, /SB_URL.*supabase\.co/);
     assert.match(appScript, /SB_KEY/);
+  });
+
+  test('modais de edição escapam valores em atributos de input', () => {
+    assert.match(appScript, /id="edit-nome" value="\$\{escHtml\(c\.nome\|\|''\)\}"/);
+    assert.match(appScript, /id="edit-obs" value="\$\{escHtml\(c\.obs\|\|''\)\}"/);
+  });
+
+  test('botões de ícone têm rótulo acessível', () => {
+    assert.match(appHtml, /class="theme-toggle"[^>]*aria-label="Trocar tema"/);
+    assert.match(appHtml, /id="eye-buti"[^>]*aria-label="Mostrar ou ocultar entradas de Buti"/);
+    assert.match(appHtml, /id="eye-bita"[^>]*aria-label="Mostrar ou ocultar entradas de Bita"/);
+    assert.match(appHtml, /id="eye-total"[^>]*aria-label="Mostrar ou ocultar renda total"/);
+    assert.match(appScript, /Marcar conta como paga/);
+    assert.match(appScript, /aria-label="Editar conta/);
+    assert.match(appScript, /aria-label="Excluir conta/);
+  });
+
+  test('CSS padroniza foco visível e alvos de toque', () => {
+    assert.match(appHtml, /:focus-visible/);
+    assert.match(appHtml, /min-height:44px/);
+    assert.match(appHtml, /min-width:44px/);
+  });
+
+  test('controles clicáveis não botão têm semântica acessível', () => {
+    assert.match(appHtml, /id="alert-count"[^>]*role="button"[^>]*tabindex="0"/);
+    assert.match(appHtml, /role="switch"/);
+    assert.match(appScript, /syncSwitchAria/);
+  });
+
+  test('modais têm semântica de diálogo', () => {
+    assert.match(appHtml, /id="modal-overlay"[^>]*role="dialog"[^>]*aria-modal="true"/);
+    assert.match(appHtml, /id="modal-entrada"[^>]*role="dialog"[^>]*aria-modal="true"/);
+    assert.match(appHtml, /id="confirm-overlay"[^>]*role="dialog"[^>]*aria-modal="true"/);
+  });
+
+  test('labels dos formulários são vinculados aos campos no startup', () => {
+    assert.match(appScript, /function bindFormLabels/);
+    assert.match(appScript, /label\.setAttribute\('for', input\.id\)/);
   });
 });

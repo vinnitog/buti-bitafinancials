@@ -18,10 +18,26 @@ function escHtml(s) {
     .replace(/'/g, '&#39;');
 }
 
+function parseMoney(v) {
+  const cleaned = String(v ?? '').trim().replace(/[^\d,.-]/g, '');
+  if (!cleaned) return 0;
+  const hasComma = cleaned.includes(',');
+  const hasDot = cleaned.includes('.');
+  let normalized = cleaned;
+  if (hasComma && hasDot) {
+    normalized = cleaned.lastIndexOf(',') > cleaned.lastIndexOf('.')
+      ? cleaned.replace(/\./g, '').replace(',', '.')
+      : cleaned.replace(/,/g, '');
+  } else if (hasComma) {
+    normalized = cleaned.replace(',', '.');
+  }
+  return parseFloat(normalized) || 0;
+}
+
 function sanitizeCsvRow(r) {
   return {
     nome:  escHtml(String(r.nome || r.name || '').slice(0, 100)).trim(),
-    valor: Math.max(0, Math.min(999999, parseFloat((r.valor || '0').replace(',', '.')) || 0)),
+    valor: Math.max(0, Math.min(999999, parseMoney(r.valor || '0'))),
     dia:   Math.min(31, Math.max(0, parseInt(r.dia || '0') || 0)),
     cat:   ['financiamento', 'fixa', 'assinatura', 'variavel'].includes(r.categoria || r.cat)
              ? (r.categoria || r.cat) : 'fixa',
@@ -250,11 +266,14 @@ describe('sanitizeCsvRow', () => {
     assert.equal(result.valor, 999999);
   });
 
-  test('TC-UNIT-014c valor com vírgula decimal aceito', () => {
+  test('TC-UNIT-014c valor brasileiro com milhar e vírgula decimal é interpretado corretamente', () => {
     const result = sanitizeCsvRow({ nome: 'X', valor: '1.500,50' });
-    // "1.500,50".replace(",",".") = "1.500.50" → parseFloat ignora após segundo ponto
-    // O importante é não ser negativo
-    assert.ok(result.valor >= 0);
+    assert.equal(result.valor, 1500.5);
+  });
+
+  test('TC-UNIT-014d valor decimal com vírgula simples é interpretado corretamente', () => {
+    const result = sanitizeCsvRow({ nome: 'X', valor: '22,90' });
+    assert.equal(result.valor, 22.9);
   });
 
   test('TC-UNIT-015 dia 32 vira 31', () => {

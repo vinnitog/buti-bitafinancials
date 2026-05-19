@@ -24,11 +24,16 @@ describe('Repo policy', () => {
   const agents = read('AGENTS.md');
   const gitignore = read('.gitignore');
   const packageJson = read('package.json');
+  const publicContext = read('PROJECT_CONTEXT.md');
   const testCmd = read('test.cmd');
 
   test('AGENTS.md pins workspace and workflow order', () => {
     assert.match(agents, /C:\\Users\\Togszera\\Desktop\\buti-bitafinancials/);
-    assertOrdered(agents, ['senior-dev', 'code-reviewer', 'qa-senior', 'qa-automate'], 'AGENTS.md');
+    assertOrdered(agents, ['senior-dev', 'ui-ux-expert', 'code-reviewer', 'qa-senior', 'qa-automate'], 'AGENTS.md');
+    assert.match(agents, /front-end sempre deve acionar `ui-ux-expert`, mesmo sem `\/ui-ux`/);
+    assert.match(agents, /HTML, CSS, layout, componentes, responsividade, acessibilidade visual, microinteracoes ou experiencia do usuario/);
+    assert.match(agents, /antes do `code-reviewer`/);
+    assert.match(agents, /front-end for puramente logica e sem impacto visual\/UX/);
     assert.match(agents, /Trabalhar sempre a partir de `develop`/);
     assert.match(agents, /Nunca fazer push direto para `main`/);
     assert.match(agents, /git diff --cached/);
@@ -61,5 +66,15 @@ describe('Repo policy', () => {
     assert.match(testCmd, /cd \/d "%~dp0"/);
     assert.doesNotMatch(testCmd, /npm test/);
     assert.match(packageJson, /repo-policy\.test\.js/);
+  });
+
+  test('kit reuse and public context are documented', () => {
+    assert.match(agents, /Como Aplicar Este Kit Em Novos Projetos/);
+    for (const required of ['AGENTS.md', 'test.cmd', 'teste de politica', '.gitignore', 'develop', 'PR `develop -> main`', 'PROJECT_CONTEXT.md']) {
+      assert.match(agents, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `AGENTS.md kit instructions should mention ${required}`);
+    }
+    assert.match(publicContext, /CONTEXT\.md, `SECURITY\.md` e `e2e\/config\.py` ficam fora do Git|CONTEXT\.md/);
+    assert.match(publicContext, /Workflow/);
+    assert.match(publicContext, /ui-ux-expert/);
   });
 });

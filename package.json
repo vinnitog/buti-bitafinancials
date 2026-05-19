@@ -4,8 +4,8 @@
   "description": "Test suite — Buti & Bita Financials",
   "type": "module",
   "scripts": {
-    "test": "node --test unit/helpers.test.js unit/supabase.test.js e2e/ui.test.js",
-    "test:unit": "node --test unit/helpers.test.js unit/supabase.test.js",
+    "test": "node --test unit/helpers.test.js unit/supabase.test.js e2e/ui.test.js unit/repo-policy.test.js",
+    "test:unit": "node --test unit/helpers.test.js unit/supabase.test.js unit/repo-policy.test.js",
     "test:e2e": "node --test e2e/ui.test.js"
   }
 }
